@@ -12,6 +12,6 @@ function AdminLayout() {
       <main className="ml-64 min-h-screen min-w-0 flex-1 overflow-x-hidden bg-background">
         <Outlet />
       </main>
-    </div>
+    </div> 
   );
 }
