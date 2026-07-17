@@ -10,12 +10,71 @@ import {
 import { getAdminDashboard } from "@/server-fns/dashboard";
 
 export const Route = createFileRoute("/admin/")({
-  loader: () => getAdminDashboard(),
+  loader: async () => {
+    try {
+      const data = await getAdminDashboard();
+      return { ok: true as const, data };
+    } catch (error) {
+      console.error("[admin dashboard]", error);
+      return {
+        ok: false as const,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to connect to the database. Check DATABASE_URL on Vercel.",
+      };
+    }
+  },
   component: AdminDashboard,
 });
 
+function DatabaseSetupNotice({ message }: { message: string }) {
+  return (
+    <div className="mx-10 mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-950">
+      <h2 className="text-lg font-semibold">Database connection required</h2>
+      <p className="mt-2 text-sm">
+        The admin dashboard needs your Supabase PostgreSQL connection. Add these in Vercel →
+        Project Settings → Environment Variables, then redeploy:
+      </p>
+      <ul className="mt-3 list-inside list-disc space-y-1 text-sm">
+        <li>
+          <code className="rounded bg-white/70 px-1">DATABASE_URL</code> — Supabase pooler URL
+          (port 6543, with <code className="rounded bg-white/70 px-1">?pgbouncer=true</code>)
+        </li>
+        <li>
+          <code className="rounded bg-white/70 px-1">DIRECT_URL</code> — direct Postgres URL (port
+          5432)
+        </li>
+        <li>
+          <code className="rounded bg-white/70 px-1">VITE_STORE_URL</code> — optional storefront
+          link for products
+        </li>
+      </ul>
+      <p className="mt-3 text-xs text-amber-900/80">{message}</p>
+    </div>
+  );
+}
+
 function AdminDashboard() {
-  const { stats, recentOrders, topBestSellers } = Route.useLoaderData();
+  const result = Route.useLoaderData();
+
+  if (!result.ok) {
+    return (
+      <div>
+        <div className="flex items-start justify-between gap-4 border-b border-border/60 px-10 pt-10 pb-6">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
+            <p className="mt-1 text-muted-foreground">
+              Welcome back — here&apos;s how your store is performing.
+            </p>
+          </div>
+        </div>
+        <DatabaseSetupNotice message={result.error} />
+      </div>
+    );
+  }
+
+  const { stats, recentOrders, topBestSellers } = result.data;
 
   const statCards = [
     {
