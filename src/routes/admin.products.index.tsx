@@ -2,17 +2,16 @@ import { useMemo, useState } from "react";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
+  Download,
   EllipsisVertical,
   Eye,
   EyeOff,
-  Filter,
+  Funnel,
   Globe,
-  Pen,
+  Pencil,
   Plus,
   Search,
-  Star,
   Trash2,
-  TrendingUp,
 } from "lucide-react";
 import {
   deleteAdminProduct,
@@ -84,180 +83,158 @@ function AdminProducts() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 p-8">
-      <div className="animate-in fade-in space-y-8 duration-500">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <h1 className="font-montserrat text-4xl font-bold tracking-tight text-primary">
-              Products
-            </h1>
-            <p className="mt-1 text-muted-foreground">Manage your e-commerce product catalog.</p>
+    <div>
+      <div className="flex items-start justify-between gap-4 border-b border-border/60 px-10 pt-10 pb-6">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Products</h1>
+          <p className="mt-1 text-muted-foreground">Manage your e-commerce product catalog.</p>
+        </div>
+        <Link
+          to="/admin/products/new"
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 font-medium text-primary-foreground hover:opacity-90"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          Add Product
+        </Link>
+      </div>
+
+      <div className="space-y-6 p-10">
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <div className="text-sm text-muted-foreground">Total Products</div>
+            <div className="mt-3 text-4xl font-bold text-foreground">{stats.total}</div>
           </div>
-          <Link
-            to="/admin/products/new"
-            className="flex cursor-pointer items-center gap-2 rounded-2xl bg-primary px-6 py-3 font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-secondary"
-          >
-            <Plus className="h-5 w-5" />
-            Add Product
-          </Link>
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <div className="text-sm text-muted-foreground">Active Listings</div>
+            <div className="mt-3 text-4xl font-bold text-emerald-600">{stats.active}</div>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <div className="text-sm text-muted-foreground">Out of Stock</div>
+            <div className="mt-3 text-4xl font-bold text-destructive">{stats.outOfStock}</div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <p className="text-sm font-medium text-muted-foreground">Total Products</p>
-            <p className="mt-2 text-3xl font-bold text-primary">{stats.total}</p>
-          </div>
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <p className="text-sm font-medium text-muted-foreground">Active Listings</p>
-            <p className="mt-2 text-3xl font-bold text-teal-600">{stats.active}</p>
-          </div>
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <p className="text-sm font-medium text-muted-foreground">Out of Stock</p>
-            <p className="mt-2 text-3xl font-bold text-red-500">{stats.outOfStock}</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 md:flex-row">
+        <div className="flex gap-3 rounded-2xl border border-border bg-card p-3">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
+            <Search
+              className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search products..."
-              className="w-full rounded-xl border border-border bg-secondary/5 py-2 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full rounded-xl border-0 bg-input py-3 pl-11 pr-4 focus:outline-none"
             />
           </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-xl border border-border px-4 py-2 font-medium transition-colors hover:bg-secondary/5"
-            >
-              <Filter className="h-[18px] w-[18px]" />
-              Filter
-            </button>
-            <button
-              type="button"
-              onClick={handleExport}
-              className="flex items-center gap-2 rounded-xl border border-border px-4 py-2 font-medium transition-colors hover:bg-secondary/5"
-            >
-              Export
-            </button>
-          </div>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm"
+          >
+            <Funnel className="h-4 w-4" aria-hidden="true" />
+            Filter
+          </button>
+          <button
+            type="button"
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm"
+          >
+            <Download className="h-4 w-4" aria-hidden="true" />
+            Export
+          </button>
         </div>
 
-        <div className="overflow-visible rounded-3xl border border-border bg-card shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card">
           {filtered.length === 0 ? (
             <p className="p-12 text-center text-muted-foreground">
               {search ? "No products match your search." : "No products found in database."}
             </p>
           ) : (
-            <table className="w-full border-collapse text-left">
-              <thead className="bg-secondary/5 text-sm font-bold uppercase tracking-wider text-primary">
-                <tr>
-                  <th className="px-6 py-4">Product</th>
-                  <th className="px-6 py-4">Category</th>
-                  <th className="px-6 py-4">Price Range</th>
-                  <th className="px-6 py-4">Visibility</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+            <table className="w-full">
+              <thead>
+                <tr className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="p-4 text-left font-medium">Product</th>
+                  <th className="p-4 text-left font-medium">Category</th>
+                  <th className="p-4 text-left font-medium">Price Range</th>
+                  <th className="p-4 text-left font-medium">Visibility</th>
+                  <th className="p-4 text-right font-medium">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody>
                 {filtered.map((product) => (
-                  <tr key={product.id} className="group transition-colors hover:bg-secondary/5">
-                    <td className="px-6 py-4">
+                  <tr key={product.id} className="border-t border-border">
+                    <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl border border-border bg-secondary/10">
+                        <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-secondary/50">
                           {product.image ? (
                             <img
                               src={product.image}
                               alt={product.name}
                               className="h-full w-full object-contain"
                             />
-                          ) : null}
+                          ) : (
+                            <span className="text-xs font-bold text-primary/30">HT</span>
+                          )}
                         </div>
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-1">
-                            <span className="font-bold text-primary">{product.name}</span>
-                            {product.isBestSeller ? (
-                              <Star
-                                className="h-3 w-3 text-amber-400"
-                                fill="currentColor"
-                                stroke="currentColor"
-                              />
-                            ) : null}
-                          </div>
-                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                            <span className="font-bold uppercase tracking-wider">
-                              {product.shortId}
-                            </span>
-                            {product.salesCount > 0 ? (
-                              <span className="flex items-center gap-0.5 rounded-md bg-emerald-50 px-1.5 py-0.5 font-bold text-emerald-600">
-                                <TrendingUp className="h-2.5 w-2.5" />
-                                {product.salesCount} sales
-                              </span>
-                            ) : null}
+                        <div className="min-w-0">
+                          <div className="line-clamp-1 font-medium">{product.name}</div>
+                          <div className="text-xs text-muted-foreground uppercase">
+                            {product.shortId}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-muted-foreground">
-                      {product.category}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-primary">
-                      {product.priceRange}
-                    </td>
-                    <td className="px-6 py-4">
+                    <td className="p-4 text-sm">{product.category}</td>
+                    <td className="p-4 text-sm font-medium">{product.priceRange}</td>
+                    <td className="p-4">
                       {product.isListed ? (
-                        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
-                          <Eye className="h-3 w-3" />
-                          Listed
-                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-1 text-[11px] font-medium text-emerald-600">
+                          <Eye className="h-3 w-3" aria-hidden="true" />
+                          LISTED
+                        </span>
                       ) : (
-                        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-600">
-                          <EyeOff className="h-3 w-3" />
-                          Hidden
-                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">
+                          <EyeOff className="h-3 w-3" aria-hidden="true" />
+                          HIDDEN
+                        </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="p-4">
                       <div className="flex items-center justify-end gap-2">
-                        <div className="flex items-center gap-1">
-                          <a
-                            href={`${STORE_URL}/product/${product.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded-lg p-2 text-teal-600 transition-all hover:bg-teal-50"
-                            title="View on website"
-                          >
-                            <Globe className="h-4 w-4" />
-                          </a>
-                          <Link
-                            to="/admin/products/$id"
-                            params={{ id: product.id }}
-                            className="rounded-lg p-2 text-indigo-600 transition-all hover:bg-indigo-50"
-                            title="Edit product"
-                          >
-                            <Pen className="h-4 w-4" />
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(product.id, product.name)}
-                            disabled={deletingId === product.id}
-                            className="rounded-lg p-2 text-red-500 transition-all hover:bg-red-50 disabled:opacity-50"
-                            title="Delete product"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                        <div className="relative">
-                          <button
-                            type="button"
-                            className="rounded-lg p-2 text-muted-foreground transition-all hover:bg-secondary/10"
-                            title="More options"
-                          >
-                            <EllipsisVertical className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            window.open(`${STORE_URL}/product/${product.id}`, "_blank", "noopener,noreferrer")
+                          }
+                          className="rounded-md p-2 hover:bg-accent"
+                          title="Toggle visibility"
+                        >
+                          <Globe className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                        <Link
+                          to="/admin/products/$id"
+                          params={{ id: product.id }}
+                          className="rounded-md p-2 hover:bg-accent"
+                          title="Edit product"
+                        >
+                          <Pencil className="h-4 w-4" aria-hidden="true" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(product.id, product.name)}
+                          disabled={deletingId === product.id}
+                          className="rounded-md p-2 text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                          title="Delete product"
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md p-2 hover:bg-accent"
+                          title="More options"
+                        >
+                          <EllipsisVertical className="h-4 w-4" aria-hidden="true" />
+                        </button>
                       </div>
                     </td>
                   </tr>

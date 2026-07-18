@@ -1,149 +1,223 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Leaf, Package, Sparkles, Star } from "lucide-react";
+import {
+  ArrowRight,
+  FileText,
+  ShieldCheck,
+  Sparkles,
+  Truck,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_store/")({
   component: StoreHome,
 });
 
 const categories = [
-  { name: "Guest Amenities", slug: "guest-amenities", count: 24 },
-  { name: "Bio Dry Amenities", slug: "bio-dry", count: 18 },
-  { name: "Bio Wet Amenities", slug: "bio-wet", count: 16 },
-  { name: "Coffee & Beverages", slug: "coffee", count: 12 },
+  { name: "Bio Dry Amenities", slug: "bio-dry-amenities", count: 0, initial: "B" },
+  { name: "Bio Wet Amenities", slug: "bio-wet-amenities", count: 3, initial: "B" },
+  { name: "Bulk & Brackets", slug: "bulk-and-brackets", count: 0, initial: "B" },
+  { name: "Dry Amenities", slug: "dry-amenities", count: 0, initial: "D" },
+  { name: "Wet Amenities", slug: "wet-amenities", count: 0, initial: "W" },
+  { name: "Tray Amenities", slug: "tray-amenities", count: 0, initial: "T" },
+  { name: "Housekeeping", slug: "housekeeping", count: 0, initial: "H" },
+  { name: "Coffee & Beverages", slug: "coffee-and-beverages", count: 0, initial: "C" },
+  { name: "Others", slug: "others", count: 0, initial: "O" },
 ] as const;
 
-const featuredProducts = [
-  { id: "1", name: "Green Apple Shampoo", price: "₹129", category: "Guest Amenities" },
-  { id: "2", name: "Apricot Body Wash", price: "₹190", category: "Bio Wet Amenities" },
-  { id: "3", name: "Lavender Conditioner", price: "₹149", category: "Guest Amenities" },
-  { id: "4", name: "Citrus Hand Wash", price: "₹89", category: "Bio Dry Amenities" },
+const bestSellers = [
+  {
+    id: "E2CDUUPQ",
+    name: "Bio Bergamot & Patchouli Body Lotion 380ml (Biotique Royal) Refillable",
+    category: "Bio Wet Amenities",
+    price: "₹200",
+    size: "380ml",
+    outOfStock: true,
+    bestseller: false,
+  },
+  {
+    id: "0FRQHV2W",
+    name: "Bio Bergamot & Patchouli Hand Wash 380ml (Biotique Royal) Refillable",
+    category: "Bio Wet Amenities",
+    price: "₹200",
+    size: "380ml",
+    outOfStock: false,
+    bestseller: true,
+  },
+  {
+    id: "BW6KXRQI",
+    name: "Bio Bergamot & Patchouli Hair Conditioner 380ml (Biotique Royal) Refillable",
+    category: "Bio Wet Amenities",
+    price: "₹200",
+    size: "380ml",
+    outOfStock: false,
+    bestseller: false,
+  },
 ] as const;
 
 function StoreHome() {
   return (
-    <main>
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-secondary/10">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 px-4 py-20 sm:px-6 lg:flex-row lg:py-28">
-          <div className="flex-1 text-center lg:text-left">
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-              <Sparkles className="h-4 w-4" />
-              Premium Hospitality Supplies
-            </p>
-            <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl lg:text-6xl">
-              Elevate Every Guest Experience
-            </h1>
-            <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-              HaTikvah Care delivers premium amenities, toiletries, and hospitality essentials for
-              hotels, resorts, and serviced apartments across India.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4 lg:justify-start">
-              <Link
-                to="/shop"
-                className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3 font-bold text-white transition-colors hover:bg-primary/90"
-              >
-                Shop Now
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                to="/about"
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-8 py-3 font-bold text-primary transition-colors hover:bg-secondary/10"
-              >
-                Learn More
-              </Link>
-            </div>
-          </div>
-          <div className="flex flex-1 justify-center">
-            <div className="relative h-72 w-full max-w-md rounded-[2rem] bg-gradient-to-br from-primary to-secondary p-1 shadow-2xl shadow-primary/20 lg:h-96">
-              <div className="flex h-full flex-col items-center justify-center rounded-[1.9rem] bg-card p-8 text-center">
-                <Leaf className="mb-4 h-16 w-16 text-primary" />
-                <p className="text-2xl font-bold text-primary">Eco-Friendly</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Sustainable amenities for conscious hospitality
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-        <div className="mb-10 text-center">
-          <h2 className="text-3xl font-bold text-primary">Shop by Category</h2>
-          <p className="mt-2 text-muted-foreground">Browse our curated hospitality collections</p>
-        </div>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((cat) => (
-            <Link
-              key={cat.slug}
-              to="/category/$slug"
-              params={{ slug: cat.slug }}
-              className="group rounded-3xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
-            >
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
-                <Package className="h-7 w-7" />
-              </div>
-              <h3 className="font-bold text-primary">{cat.name}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{cat.count} products</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-card">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-          <div className="mb-10 flex items-center justify-between">
+    <main className="flex-1">
+      <div>
+        <section className="mx-auto max-w-7xl px-6 pt-20 pb-24">
+          <div className="grid items-center gap-12 md:grid-cols-2">
             <div>
-              <h2 className="text-3xl font-bold text-primary">Best Sellers</h2>
-              <p className="mt-1 text-muted-foreground">Our most popular hospitality products</p>
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                Authorized Boutique Distributor • Hyderabad
+              </div>
+              <h1 className="text-5xl font-bold leading-[1.05] tracking-tight md:text-6xl">
+                Elevating Excellence in <br />
+                <span className="text-primary/70">Hospitality &amp; Hygiene.</span>
+              </h1>
+              <p className="mt-6 max-w-md text-lg text-muted-foreground">
+                As a trusted partner and authorized Boutique distributor, we provide premium guest
+                amenities and industrial-grade cleaning solutions tailored for India&apos;s finest
+                hotels, resorts, and corporate institutions.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  to="/shop"
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground hover:opacity-90"
+                >
+                  View catalogue <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <Link
+                  to="/shop"
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-3 hover:bg-accent"
+                >
+                  Browse Shop
+                </Link>
+              </div>
             </div>
-            <Link to="/shop" className="font-bold text-primary hover:underline">
-              View All
+            <div className="grid aspect-square place-items-center rounded-3xl border border-border bg-gradient-to-br from-accent via-secondary to-background">
+              <div className="text-center">
+                <div className="font-montserrat text-7xl font-bold text-primary/30">HT</div>
+                <div className="mt-2 text-sm text-muted-foreground">Crafted in small batches</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-y border-border bg-secondary/40">
+          <div className="mx-auto grid max-w-7xl gap-8 px-6 py-12 md:grid-cols-3">
+            <div className="flex gap-4">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+                <Sparkles className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div>
+                <div className="font-semibold">Paraben Free</div>
+                <div className="text-sm text-muted-foreground">Clean bio formulations.</div>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+                <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div>
+                <div className="font-semibold">Cruelty Free</div>
+                <div className="text-sm text-muted-foreground">Ethically produced.</div>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+                <Truck className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div>
+                <div className="font-semibold">Fast Dispatch</div>
+                <div className="text-sm text-muted-foreground">Within 24 hours.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-6 py-20">
+          <div className="mb-10 flex items-end justify-between">
+            <div>
+              <h2 className="text-3xl font-bold">Shop by Category</h2>
+              <p className="mt-1 text-muted-foreground">
+                Curated collections for every hospitality need.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Browse catalogues
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {categories.map((cat) => (
+              <Link
+                key={cat.slug}
+                to="/category/$slug"
+                params={{ slug: cat.slug }}
+                className="group rounded-2xl border border-border bg-card p-5 transition-all hover:border-primary hover:shadow-md"
+              >
+                <div className="grid h-14 w-14 place-items-center rounded-xl bg-secondary font-montserrat text-lg font-bold text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                  {cat.initial}
+                </div>
+                <div className="mt-4 font-semibold leading-snug">{cat.name}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{cat.count} products</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-6 pb-20">
+          <div className="mb-10 flex items-end justify-between">
+            <div>
+              <h2 className="text-3xl font-bold">Best Sellers</h2>
+              <p className="mt-1 text-muted-foreground">Loved by hotels and homes alike.</p>
+            </div>
+            <Link to="/shop" className="text-sm text-primary hover:underline">
+              View all →
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredProducts.map((product) => (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {bestSellers.map((product) => (
               <Link
                 key={product.id}
                 to="/product/$id"
                 params={{ id: product.id }}
-                className="group overflow-hidden rounded-3xl border border-border bg-background shadow-sm transition-all hover:shadow-md"
+                className="group block overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-lg"
               >
-                <div className="flex h-40 items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/10">
-                  <Package className="h-16 w-16 text-primary/30 transition-transform group-hover:scale-110" />
+                <div className="relative grid aspect-square place-items-center bg-secondary/50">
+                  <div className="font-montserrat text-6xl font-bold text-primary/20">HT</div>
+                  <span className="absolute top-3 left-3 rounded-md bg-foreground px-2.5 py-1 text-[11px] font-semibold text-background">
+                    {product.size}
+                  </span>
+                  {product.outOfStock ? (
+                    <span className="absolute top-3 right-3 rounded-md bg-destructive px-2 py-1 text-[11px] font-medium text-destructive-foreground">
+                      Out of Stock
+                    </span>
+                  ) : null}
+                  {product.bestseller ? (
+                    <span className="absolute top-3 right-3 rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground">
+                      Bestseller
+                    </span>
+                  ) : null}
                 </div>
                 <div className="p-5">
-                  <p className="text-xs font-medium text-muted-foreground">{product.category}</p>
-                  <h3 className="mt-1 font-bold text-primary">{product.name}</h3>
-                  <div className="mt-3 flex items-center justify-between">
-                    <p className="text-lg font-bold text-primary">{product.price}</p>
-                    <div className="flex items-center gap-1 text-xs text-amber-500">
-                      <Star className="h-3.5 w-3.5 fill-current" />
-                      4.8
-                    </div>
+                  <div className="text-xs text-muted-foreground">{product.category}</div>
+                  <div className="mt-1 line-clamp-2 font-medium group-hover:text-primary">
+                    {product.name}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <div className="font-semibold">{product.price}</div>
+                    <span
+                      className={`rounded-full bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 ${
+                        product.outOfStock ? "cursor-not-allowed opacity-40" : ""
+                      }`}
+                    >
+                      Add to cart
+                    </span>
                   </div>
                 </div>
               </Link>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-        <div className="rounded-[2rem] bg-primary p-10 text-center text-white">
-          <h2 className="text-3xl font-bold">Need Bulk Orders?</h2>
-          <p className="mx-auto mt-3 max-w-lg text-primary-foreground/80">
-            Get custom pricing for hotels and hospitality businesses. Contact us for catalog and
-            wholesale rates.
-          </p>
-          <Link
-            to="/contact"
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-8 py-3 font-bold text-primary transition-colors hover:bg-white/90"
-          >
-            Contact Us
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

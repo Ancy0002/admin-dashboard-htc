@@ -1,43 +1,70 @@
 import { Link } from "@tanstack/react-router";
 
+const shopLinks = [
+  { slug: "bio-dry-amenities", label: "Bio Dry Amenities" },
+  { slug: "bio-wet-amenities", label: "Bio Wet Amenities" },
+  { slug: "bulk-and-brackets", label: "Bulk & Brackets" },
+  { slug: "dry-amenities", label: "Dry Amenities" },
+  { slug: "wet-amenities", label: "Wet Amenities" },
+] as const;
+
 export function StoreFooter() {
   return (
-    <footer className="mt-auto border-t border-border bg-card">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-        <div className="grid gap-8 md:grid-cols-3">
-          <div>
-            <h3 className="text-lg font-bold text-primary">HaTikvah Care</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Premium hospitality amenities and guest supplies for hotels, resorts, and serviced
-              apartments.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-bold text-primary">Quick Links</h4>
-            <div className="mt-3 flex flex-col gap-2 text-sm text-muted-foreground">
-              <Link to="/shop" className="hover:text-primary">
-                Shop
-              </Link>
-              <Link to="/about" className="hover:text-primary">
+    <footer className="mt-20 border-t border-border bg-secondary/30">
+      <div className="mx-auto grid max-w-7xl gap-8 px-6 py-12 text-sm md:grid-cols-4">
+        <div>
+          <div className="mb-2 font-montserrat text-lg font-bold">HaTikvah Care</div>
+          <p className="text-muted-foreground">
+            Premium hospitality amenities &amp; industrial-grade hygiene solutions for India&apos;s
+            finest hotels.
+          </p>
+        </div>
+        <div>
+          <div className="mb-3 font-semibold">Shop</div>
+          <ul className="space-y-2 text-muted-foreground">
+            {shopLinks.map(({ slug, label }) => (
+              <li key={slug}>
+                <Link to="/category/$slug" params={{ slug }} className="hover:text-foreground">
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <div className="mb-3 font-semibold">Company</div>
+          <ul className="space-y-2 text-muted-foreground">
+            <li>
+              <Link to="/about" className="hover:text-foreground">
                 About Us
               </Link>
-              <Link to="/contact" className="hover:text-primary">
-                Contact
+            </li>
+            <li>
+              <Link to="/contact" className="hover:text-foreground">
+                Contact Us
               </Link>
-            </div>
-          </div>
-          <div>
-            <h4 className="font-bold text-primary">Contact</h4>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Kondapur, Hyderabad, Telangana 500084
-              <br />
-              +91 79954 44434
-            </p>
-          </div>
+            </li>
+            <li>
+              <Link to="/shop" className="hover:text-foreground">
+                Shop
+              </Link>
+            </li>
+          </ul>
         </div>
-        <p className="mt-8 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} HaTikvah Care. All rights reserved.
-        </p>
+        <div>
+          <div className="mb-3 font-semibold">Get in Touch</div>
+          <p className="text-muted-foreground">
+            Eshwar Nilayam, Kondapur,
+            <br />
+            Gachibowli, Hyderabad 500084
+          </p>
+        </div>
+      </div>
+      <div className="border-t border-border">
+        <div className="mx-auto flex max-w-7xl justify-between px-6 py-5 text-xs text-muted-foreground">
+          <div>© {new Date().getFullYear()} HaTikvah Care. All rights reserved.</div>
+          <div>By EXL Marketing</div>
+        </div>
       </div>
     </footer>
   );

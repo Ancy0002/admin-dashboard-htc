@@ -1,58 +1,134 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, Menu, Phone } from "lucide-react";
+import {
+  ChevronDown,
+  Search,
+  ShoppingCart,
+  User,
+} from "lucide-react";
 
 const navLinks = [
-  { to: "/", label: "Home" },
   { to: "/shop", label: "Shop" },
-  { to: "/about", label: "About" },
-  { to: "/contact", label: "Contact" },
+  { to: "/about", label: "About Us" },
+  { to: "/contact", label: "Contact Us" },
 ] as const;
 
 export function StoreNavbar() {
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!accountOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountRef.current && !accountRef.current.contains(event.target as Node)) {
+        setAccountOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [accountOpen]);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
-            HT
-          </span>
-          <div>
-            <p className="text-lg font-bold text-primary">HaTikvah Care</p>
-            <p className="text-[10px] text-muted-foreground">Premium Hospitality Supplies</p>
+    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+      <div className="mx-auto flex h-20 max-w-7xl items-center gap-6 px-6">
+        <Link to="/" className="flex shrink-0 items-center gap-2">
+          <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary font-montserrat text-sm font-bold text-primary-foreground">
+            H
+          </div>
+          <div className="leading-tight">
+            <div className="font-montserrat text-lg font-bold">HaTikvah Care</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              EXL Marketing • Hyderabad
+            </div>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="ml-4 hidden items-center gap-7 lg:flex">
+          <Link
+            to="/"
+            className="text-[15px] text-foreground/80 transition-colors hover:text-foreground"
+            activeProps={{ className: "text-[15px] font-semibold text-primary transition-colors" }}
+          >
+            Home
+          </Link>
+          <div className="relative">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-[15px] text-foreground/80 hover:text-foreground"
+            >
+              Categories <ChevronDown className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
           {navLinks.map(({ to, label }) => (
             <Link
               key={to}
               to={to}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-              activeProps={{ className: "text-sm font-bold text-primary" }}
+              className="text-[15px] text-foreground/80 transition-colors hover:text-foreground"
+              activeProps={{ className: "text-[15px] font-semibold text-primary transition-colors" }}
             >
               {label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <a
-            href="tel:+917995444434"
-            className="hidden items-center gap-1 text-sm font-medium text-primary sm:flex"
-          >
-            <Phone className="h-4 w-4" />
-            +91 79954 44434
-          </a>
+        <div className="relative mx-2 hidden max-w-md flex-1 md:flex">
+          <Search
+            className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <input
+            placeholder="Search hotel supplies, products, and brands..."
+            className="w-full rounded-full border border-border bg-secondary/60 py-2.5 pl-11 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <div ref={accountRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setAccountOpen((open) => !open)}
+              className="grid h-10 w-10 place-items-center rounded-full border border-border hover:bg-accent"
+              aria-label="Account"
+              aria-expanded={accountOpen}
+            >
+              <User className="h-4 w-4" aria-hidden="true" />
+            </button>
+            {accountOpen ? (
+              <div className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-border bg-card p-2 shadow-lg">
+                <Link
+                  to="/login"
+                  onClick={() => setAccountOpen(false)}
+                  className="block rounded-lg px-3 py-2 text-sm hover:bg-accent"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setAccountOpen(false)}
+                  className="block rounded-lg px-3 py-2 text-sm hover:bg-accent"
+                >
+                  Create Account
+                </Link>
+                <div className="my-1 border-t border-border" />
+                <Link
+                  to="/admin"
+                  onClick={() => setAccountOpen(false)}
+                  className="block rounded-lg px-3 py-2 text-sm hover:bg-accent"
+                >
+                  Admin Panel
+                </Link>
+              </div>
+            ) : null}
+          </div>
           <Link
             to="/cart"
-            className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+            aria-label="Cart"
+            className="relative grid h-10 w-10 place-items-center rounded-full border border-border hover:bg-accent"
           >
-            <ShoppingBag className="h-4 w-4" />
-            Cart
+            <ShoppingCart className="h-4 w-4" aria-hidden="true" />
           </Link>
-          <button type="button" className="rounded-lg p-2 text-primary md:hidden">
-            <Menu className="h-5 w-5" />
-          </button>
         </div>
       </div>
     </header>

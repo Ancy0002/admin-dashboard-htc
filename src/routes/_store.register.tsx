@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_store/register")({
   component: RegisterPage,
@@ -6,26 +6,47 @@ export const Route = createFileRoute("/_store/register")({
 
 function RegisterPage() {
   return (
-    <div className="mx-auto flex max-w-md flex-col px-4 py-16 sm:px-6">
-      <h1 className="text-3xl font-bold text-primary">Create Account</h1>
-      <p className="mt-2 text-muted-foreground">Register to shop and track your orders.</p>
-      <form className="mt-8 space-y-4 rounded-3xl border border-border bg-card p-8 shadow-sm">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-muted-foreground">Full Name</label>
-          <input className="w-full rounded-xl border border-border bg-secondary/5 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-muted-foreground">Email</label>
-          <input type="email" className="w-full rounded-xl border border-border bg-secondary/5 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-muted-foreground">Password</label>
-          <input type="password" className="w-full rounded-xl border border-border bg-secondary/5 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
-        <button type="button" className="w-full rounded-xl bg-primary py-3 font-bold text-white hover:bg-primary/90">
-          Create Account
-        </button>
-      </form>
-    </div>
+    <main className="flex-1">
+      <div className="mx-auto max-w-md px-6 py-20">
+        <h1 className="text-3xl font-bold tracking-tight">Create your account</h1>
+        <p className="mt-1 text-sm text-muted-foreground">It only takes a moment.</p>
+        <form
+          className="mt-8 space-y-4 rounded-2xl border border-border bg-card p-6"
+          onSubmit={(e) => e.preventDefault()}
+        >
+          <div>
+            <label className="mb-1 block text-sm font-medium">Full Name</label>
+            <input className="w-full rounded-lg border border-border bg-input px-4 py-2.5" />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Email</label>
+            <input
+              type="email"
+              className="w-full rounded-lg border border-border bg-input px-4 py-2.5"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Password</label>
+            <input
+              type="password"
+              className="w-full rounded-lg border border-border bg-input px-4 py-2.5"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">Minimum 6 characters.</p>
+          </div>
+          <button
+            type="submit"
+            className="w-full rounded-full bg-primary px-5 py-3 font-medium text-primary-foreground hover:opacity-90"
+          >
+            Create Account
+          </button>
+          <div className="text-center text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary hover:underline">
+              Sign in
+            </Link>
+          </div>
+        </form>
+      </div>
+    </main>
   );
 }

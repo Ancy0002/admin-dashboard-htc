@@ -7,11 +7,11 @@ export const Route = createFileRoute("/admin")({
 
 function AdminLayout() {
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-[oklch(0.985_0.005_95)]">
       <AdminSidebar />
-      <main className="ml-64 min-h-screen min-w-0 flex-1 overflow-x-hidden bg-background">
+      <main className="min-w-0 flex-1 overflow-x-hidden">
         <Outlet />
       </main>
-    </div> 
+    </div>
   );
 }
