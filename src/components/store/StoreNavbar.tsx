@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   ChevronDown,
+  LogOut,
   Search,
   ShoppingCart,
   User,
 } from "lucide-react";
+import { clearStoreSession, getStoreSession, type StoreSession } from "@/lib/store-auth";
 
 const navLinks = [
   { to: "/shop", label: "Shop" },
@@ -15,7 +17,12 @@ const navLinks = [
 
 export function StoreNavbar() {
   const [accountOpen, setAccountOpen] = useState(false);
+  const [session, setSession] = useState<StoreSession | null>(null);
   const accountRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setSession(getStoreSession());
+  }, []);
 
   useEffect(() => {
     if (!accountOpen) return;
@@ -29,6 +36,12 @@ export function StoreNavbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [accountOpen]);
+
+  const handleSignOut = () => {
+    clearStoreSession();
+    setSession(null);
+    setAccountOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
@@ -97,20 +110,38 @@ export function StoreNavbar() {
             </button>
             {accountOpen ? (
               <div className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-border bg-card p-2 shadow-lg">
-                <Link
-                  to="/login"
-                  onClick={() => setAccountOpen(false)}
-                  className="block rounded-lg px-3 py-2 text-sm hover:bg-accent"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/register"
-                  onClick={() => setAccountOpen(false)}
-                  className="block rounded-lg px-3 py-2 text-sm hover:bg-accent"
-                >
-                  Create Account
-                </Link>
+                {session ? (
+                  <>
+                    <div className="px-3 py-2 text-xs text-muted-foreground">Signed in as</div>
+                    <div className="px-3 pb-2 text-sm font-medium">{session.maskedEmail}</div>
+                    <div className="my-1 border-t border-border" />
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-accent"
+                    >
+                      <LogOut className="h-4 w-4" aria-hidden="true" />
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      onClick={() => setAccountOpen(false)}
+                      className="block rounded-lg px-3 py-2 text-sm hover:bg-accent"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={() => setAccountOpen(false)}
+                      className="block rounded-lg px-3 py-2 text-sm hover:bg-accent"
+                    >
+                      Create Account
+                    </Link>
+                  </>
+                )}
                 <div className="my-1 border-t border-border" />
                 <Link
                   to="/admin"

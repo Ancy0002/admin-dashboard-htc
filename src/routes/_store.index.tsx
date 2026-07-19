@@ -1,13 +1,23 @@
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   ArrowRight,
+  Download,
   FileText,
   ShieldCheck,
   Sparkles,
   Truck,
 } from "lucide-react";
+import { getStoreCatalogues, type Catalogue } from "@/server-fns/catalogues";
 
 export const Route = createFileRoute("/_store/")({
+  loader: async () => {
+    try {
+      return { catalogues: await getStoreCatalogues() };
+    } catch {
+      return { catalogues: [] as Catalogue[] };
+    }
+  },
   component: StoreHome,
 });
 
@@ -53,7 +63,67 @@ const bestSellers = [
   },
 ] as const;
 
+function CatalogueMenu({
+  catalogues,
+  openUp = false,
+  children,
+}: {
+  catalogues: Catalogue[];
+  openUp?: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => setOpen((value) => !value)}>
+        {children}
+      </button>
+      {open ? (
+        <div
+          className={`absolute left-0 z-50 min-w-[280px] overflow-hidden rounded-xl border border-border bg-card shadow-xl ${
+            openUp ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
+        >
+          <div className="max-h-[240px] overflow-y-auto py-2">
+            {catalogues.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-muted-foreground">No catalogues uploaded yet.</div>
+            ) : (
+              catalogues.map((catalogue) => (
+                <a
+                  key={catalogue.id}
+                  href={catalogue.pdfUrl!}
+                  download={catalogue.fileName ?? true}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-primary hover:text-primary-foreground"
+                  onClick={() => setOpen(false)}
+                >
+                  <span>{catalogue.name}</span>
+                  <Download className="h-4 w-4" aria-hidden="true" />
+                </a>
+              ))
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function StoreHome() {
+  const { catalogues } = Route.useLoaderData();
+
   return (
     <main className="flex-1">
       <div>
@@ -74,12 +144,12 @@ function StoreHome() {
                 hotels, resorts, and corporate institutions.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  to="/shop"
-                  className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground hover:opacity-90"
-                >
-                  View catalogue <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
+                <CatalogueMenu catalogues={catalogues} openUp>
+                  <span className="group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground hover:opacity-90">
+                    View catalogue
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1" aria-hidden="true" />
+                  </span>
+                </CatalogueMenu>
                 <Link
                   to="/shop"
                   className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-3 hover:bg-accent"
@@ -137,13 +207,12 @@ function StoreHome() {
                 Curated collections for every hospitality need.
               </p>
             </div>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-            >
-              <FileText className="h-4 w-4" aria-hidden="true" />
-              Browse catalogues
-            </button>
+            <CatalogueMenu catalogues={catalogues}>
+              <span className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                <FileText className="h-4 w-4" aria-hidden="true" />
+                Browse catalogues
+              </span>
+            </CatalogueMenu>
           </div>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {categories.map((cat) => (

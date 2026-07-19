@@ -9,8 +9,6 @@ import {
   ShoppingCart,
   Users,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/products", label: "Products", icon: Package },
@@ -50,12 +48,10 @@ export function AdminSidebar() {
                 "flex items-center gap-3 rounded-lg px-4 py-3 text-sm text-foreground/80 transition-colors hover:bg-accent",
             }}
           >
-            {({ isActive }) => (
-              <>
-                <item.icon className={cn("h-4 w-4", isActive ? "" : "")} aria-hidden="true" />
-                {item.label}
-              </>
-            )}
+            <>
+              <item.icon className="h-4 w-4" aria-hidden="true" />
+              {item.label}
+            </>
           </Link>
         ))}
       </nav>
