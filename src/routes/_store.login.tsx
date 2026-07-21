@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Eye, EyeOff } from "lucide-react";
 import { setStoreSession } from "@/lib/store-auth";
@@ -27,7 +27,7 @@ function LoginPage() {
     try {
       const result = await login({ data: { email, password } });
       setStoreSession({ maskedEmail: result.maskedEmail });
-      await navigate({ to: "/" });
+      await navigate({ to: "/admin" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed. Please try again.");
     } finally {
@@ -40,7 +40,7 @@ function LoginPage() {
       <div className="mx-auto max-w-md px-6 py-20">
         <h1 className="text-3xl font-bold tracking-tight">Sign in</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Access your account to track orders and reorder favourites.
+          Sign in to open the admin dashboard.
         </p>
         <form
           className="mt-8 space-y-4 rounded-2xl border border-border bg-card p-6"
@@ -100,12 +100,6 @@ function LoginPage() {
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
-          <div className="text-center text-sm text-muted-foreground">
-            New here?{" "}
-            <Link to="/register" className="text-primary hover:underline">
-              Create an account
-            </Link>
-          </div>
         </form>
       </div>
     </main>
