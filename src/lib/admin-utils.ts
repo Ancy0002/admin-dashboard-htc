@@ -1,8 +1,9 @@
-const minioEndpoint = process.env.NEXT_PUBLIC_MINIO_ENDPOINT || "http://82.25.108.30:9000";
-const bucketName = process.env.NEXT_PUBLIC_MINIO_BUCKET_NAME || "hatikvahstorage";
+const minioEndpoint =
+  process.env.NEXT_PUBLIC_MINIO_ENDPOINT || process.env.S3_PUBLIC_URL || "";
+const bucketName = process.env.NEXT_PUBLIC_MINIO_BUCKET_NAME || process.env.S3_BUCKET_NAME || "";
 
 export function sanitizeImageUrl(url: string) {
-  if (!url) return url;
+  if (!url || !minioEndpoint || !bucketName) return url;
   if (url.includes(minioEndpoint)) return url;
 
   const match = url.match(/uploads\/(.*)$/);

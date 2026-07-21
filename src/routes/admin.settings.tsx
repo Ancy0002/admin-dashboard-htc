@@ -1,7 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { FileText, Plus, Trash2, Upload } from "lucide-react";
+import { toast } from "sonner";
+import { INPUT_CLASS, LABEL_CLASS } from "@/lib/admin-form-styles";
+import { fileToBase64 } from "@/lib/file-utils";
+import {
+  loadAdminSettings,
+  saveAdminSettings,
+  type DeliveryTier,
+} from "@/lib/admin-settings-storage";
 import {
   clearCataloguePdf,
   createCatalogue,
@@ -28,10 +36,6 @@ export const Route = createFileRoute("/admin/settings")({
   component: AdminSettings,
 });
 
-const INPUT_CLASS =
-  "w-full px-4 py-2.5 rounded-lg bg-input border-0 focus:outline-none focus:ring-2 focus:ring-primary";
-const LABEL_CLASS = "text-sm font-semibold block mb-1.5";
-
 const DEFAULT_STORE = {
   name: "HaTikvah",
   address:
@@ -42,22 +46,12 @@ const DEFAULT_STORE = {
   freeDeliveryAbove: "1500",
 };
 
-type DeliveryTier = { id: string; radius: number; fee: number };
-
 const DEFAULT_TIERS: DeliveryTier[] = [
   { id: "1", radius: 5, fee: 40 },
   { id: "2", radius: 10, fee: 70 },
   { id: "3", radius: 20, fee: 120 },
   { id: "4", radius: 50, fee: 250 },
 ];
-
-async function fileToBase64(file: File) {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
 
 function AdminSettings() {
   const { catalogues, loadError } = Route.useLoaderData();
@@ -78,6 +72,19 @@ function AdminSettings() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const saved = loadAdminSettings();
+    if (!saved) return;
+
+    setStoreName(saved.storeName);
+    setStoreAddress(saved.storeAddress);
+    setLatitude(saved.latitude);
+    setLongitude(saved.longitude);
+    setGst(saved.gst);
+    setFreeDeliveryAbove(saved.freeDeliveryAbove);
+    setDeliveryTiers(saved.deliveryTiers);
+  }, []);
+
   const getName = (id: string, fallback: string) => names[id] ?? fallback;
 
   const refresh = async () => {
@@ -97,6 +104,19 @@ function AdminSettings() {
     }
   };
 
+  const save = () => {
+    saveAdminSettings({
+      storeName,
+      storeAddress,
+      latitude,
+      longitude,
+      gst,
+      freeDeliveryAbove,
+      deliveryTiers,
+    });
+    toast.success("Settings saved");
+  };
+
   return (
     <div>
       <div className="flex items-start justify-between gap-4 px-10 pt-10 pb-6 border-b border-border/60">
@@ -108,6 +128,7 @@ function AdminSettings() {
         </div>
         <button
           type="button"
+          onClick={save}
           className="px-5 py-3 rounded-full bg-primary text-primary-foreground font-medium"
         >
           Save Settings

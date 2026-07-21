@@ -8,6 +8,8 @@ import {
   User,
 } from "lucide-react";
 import { clearStoreSession, getStoreSession, type StoreSession } from "@/lib/store-auth";
+import { getStoreCategoryCards } from "@/lib/store-categories";
+import { useCartStore } from "@/lib/cart-store";
 
 const navLinks = [
   { to: "/shop", label: "Shop" },
@@ -15,27 +17,37 @@ const navLinks = [
   { to: "/contact", label: "Contact Us" },
 ] as const;
 
+const categoryLinks = getStoreCategoryCards();
+
 export function StoreNavbar() {
   const [accountOpen, setAccountOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [session, setSession] = useState<StoreSession | null>(null);
   const accountRef = useRef<HTMLDivElement>(null);
+  const categoriesRef = useRef<HTMLDivElement>(null);
+  const cartCount = useCartStore((state) =>
+    state.items.reduce((total, item) => total + item.quantity, 0),
+  );
 
   useEffect(() => {
     setSession(getStoreSession());
   }, []);
 
   useEffect(() => {
-    if (!accountOpen) return;
+    if (!accountOpen && !categoriesOpen) return;
 
     const handleClickOutside = (event: MouseEvent) => {
       if (accountRef.current && !accountRef.current.contains(event.target as Node)) {
         setAccountOpen(false);
       }
+      if (categoriesRef.current && !categoriesRef.current.contains(event.target as Node)) {
+        setCategoriesOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [accountOpen]);
+  }, [accountOpen, categoriesOpen]);
 
   const handleSignOut = () => {
     clearStoreSession();
@@ -66,13 +78,30 @@ export function StoreNavbar() {
           >
             Home
           </Link>
-          <div className="relative">
+          <div className="relative" ref={categoriesRef}>
             <button
               type="button"
+              onClick={() => setCategoriesOpen((open) => !open)}
               className="inline-flex items-center gap-1 text-[15px] text-foreground/80 hover:text-foreground"
+              aria-expanded={categoriesOpen}
             >
               Categories <ChevronDown className="h-4 w-4" aria-hidden="true" />
             </button>
+            {categoriesOpen ? (
+              <div className="absolute left-0 z-50 mt-3 w-64 rounded-xl border border-border bg-card p-2 shadow-lg">
+                {categoryLinks.map((category) => (
+                  <Link
+                    key={category.slug}
+                    to="/category/$slug"
+                    params={{ slug: category.slug }}
+                    onClick={() => setCategoriesOpen(false)}
+                    className="block rounded-lg px-3 py-2 text-sm hover:bg-accent"
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
           </div>
           {navLinks.map(({ to, label }) => (
             <Link
@@ -159,6 +188,11 @@ export function StoreNavbar() {
             className="relative grid h-10 w-10 place-items-center rounded-full border border-border hover:bg-accent"
           >
             <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+            {cartCount > 0 ? (
+              <span className="absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                {cartCount}
+              </span>
+            ) : null}
           </Link>
         </div>
       </div>

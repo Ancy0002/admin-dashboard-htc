@@ -3,23 +3,21 @@ import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Download,
-  EllipsisVertical,
   Eye,
   EyeOff,
-  Funnel,
   Globe,
   Pencil,
   Plus,
   Search,
   Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
+import { STORE_URL } from "@/lib/store-url";
 import {
   deleteAdminProduct,
   getAdminProductStats,
   getAdminProducts,
 } from "@/server-fns/products";
-
-const STORE_URL = import.meta.env.VITE_STORE_URL ?? "https://hatikvah.vercel.app";
 
 export const Route = createFileRoute("/admin/products/")({
   loader: async () => {
@@ -54,9 +52,10 @@ function AdminProducts() {
     setDeletingId(id);
     try {
       await deleteProduct({ data: id });
+      toast.success("Product deleted");
       await router.invalidate();
     } catch {
-      window.alert("Failed to delete product. Please try again.");
+      toast.error("Failed to delete product. Please try again.");
     } finally {
       setDeletingId(null);
     }
@@ -127,13 +126,6 @@ function AdminProducts() {
               className="w-full rounded-xl border-0 bg-input py-3 pl-11 pr-4 focus:outline-none"
             />
           </div>
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm"
-          >
-            <Funnel className="h-4 w-4" aria-hidden="true" />
-            Filter
-          </button>
           <button
             type="button"
             onClick={handleExport}
@@ -207,7 +199,7 @@ function AdminProducts() {
                             window.open(`${STORE_URL}/product/${product.id}`, "_blank", "noopener,noreferrer")
                           }
                           className="rounded-md p-2 hover:bg-accent"
-                          title="Toggle visibility"
+                          title="View on website"
                         >
                           <Globe className="h-4 w-4" aria-hidden="true" />
                         </button>
@@ -227,13 +219,6 @@ function AdminProducts() {
                           title="Delete product"
                         >
                           <Trash2 className="h-4 w-4" aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-md p-2 hover:bg-accent"
-                          title="More options"
-                        >
-                          <EllipsisVertical className="h-4 w-4" aria-hidden="true" />
                         </button>
                       </div>
                     </td>

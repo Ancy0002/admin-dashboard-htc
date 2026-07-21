@@ -24,7 +24,8 @@ function getBucketName() {
 }
 
 function getPublicObjectUrl(key: string) {
-  const endpoint = process.env.S3_ENDPOINT || "";
+  const endpoint =
+    process.env.S3_ENDPOINT || process.env.NEXT_PUBLIC_MINIO_ENDPOINT || "";
   const bucket = getBucketName();
   const match = endpoint.match(/https:\/\/([^.]+)\.storage\.supabase\.co/);
 
@@ -32,8 +33,10 @@ function getPublicObjectUrl(key: string) {
     return `https://${match[1]}.supabase.co/storage/v1/object/public/${bucket}/${key}`;
   }
 
-  const minioEndpoint = process.env.NEXT_PUBLIC_MINIO_ENDPOINT || "http://82.25.108.30:9000";
-  return `${minioEndpoint}/${bucket}/${key}`;
+  if (!endpoint) {
+    throw new Error("S3_ENDPOINT is not configured.");
+  }
+  return `${endpoint.replace(/\/$/, "")}/${bucket}/${key}`;
 }
 
 function getObjectKeyFromUrl(url: string) {

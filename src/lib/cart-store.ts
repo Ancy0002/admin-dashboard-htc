@@ -3,29 +3,26 @@ import { persist } from "zustand/middleware";
 
 export type CartItem = {
   id: string;
+  productId: string;
   name: string;
   price: number;
   quantity: number;
+  size: string;
+  image?: string;
 };
 
 type CartState = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
   removeItem: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
 };
 
 export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
-      items: [
-        {
-          id: "0FRQHV2W",
-          name: "Bio Bergamot & Patchouli Hand Wash 380ml (Biotique Royal) Refillable",
-          price: 200,
-          quantity: 1,
-        },
-      ],
+      items: [],
       addItem: (item) =>
         set((state) => {
           const existing = state.items.find((entry) => entry.id === item.id);
@@ -43,6 +40,13 @@ export const useCartStore = create<CartState>()(
           };
         }),
       removeItem: (id) => set((state) => ({ items: state.items.filter((item) => item.id !== id) })),
+      updateQuantity: (id, quantity) =>
+        set((state) => ({
+          items:
+            quantity <= 0
+              ? state.items.filter((item) => item.id !== id)
+              : state.items.map((item) => (item.id === id ? { ...item, quantity } : item)),
+        })),
       clearCart: () => set({ items: [] }),
     }),
     { name: "htc-cart" },

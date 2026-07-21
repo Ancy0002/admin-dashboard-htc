@@ -37,10 +37,10 @@ export function calculateOrderTotals(itemsSubtotal: number, deliveryFee: number,
 
   return { taxableValue, gst, grandTotal };
 }
-
 export function getStoreCoordinates() {
   return {
     latitude: STORE_LOCATION.latitude,
     longitude: STORE_LOCATION.longitude,
   };
 }
+

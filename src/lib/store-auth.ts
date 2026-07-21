@@ -12,7 +12,6 @@ export function maskEmail(email: string) {
   const hidden = Math.max(local.length - 1, 8);
   return `${visible}${"*".repeat(hidden)}@${domain}`;
 }
-
 export function getStoreSession(): StoreSession | null {
   if (typeof window === "undefined") return null;
 
@@ -32,3 +31,4 @@ export function setStoreSession(session: StoreSession) {
 export function clearStoreSession() {
   sessionStorage.removeItem(SESSION_KEY);
 }
+

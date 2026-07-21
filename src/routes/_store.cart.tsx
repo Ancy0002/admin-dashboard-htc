@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ShoppingBag } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { useCartStore } from "@/lib/cart-store";
 import { calculateOrderTotals } from "@/lib/delivery";
 import { FREE_DELIVERY_ABOVE, GST_PERCENT } from "@/lib/store-settings";
 import { formatIndianCurrency } from "@/lib/admin-utils";
 import { calculateDeliveryFromPincode } from "@/server-fns/delivery";
+import { createStoreOrder } from "@/server-fns/orders";
 
 export const Route = createFileRoute("/_store/cart")({
   component: CartPage,
@@ -20,16 +22,22 @@ type DeliveryQuote = {
 
 function CartPage() {
   const items = useCartStore((state) => state.items);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const clearCart = useCartStore((state) => state.clearCart);
   const calculateDelivery = useServerFn(calculateDeliveryFromPincode);
+  const createOrder = useServerFn(createStoreOrder);
 
-  const [fullName, setFullName] = useState("Ancy");
-  const [email, setEmail] = useState("ancyriju0002@gmail.com");
-  const [phone, setPhone] = useState("9398084250");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [pincode, setPincode] = useState("");
   const [address, setAddress] = useState("");
   const [deliveryQuote, setDeliveryQuote] = useState<DeliveryQuote | null>(null);
   const [deliveryError, setDeliveryError] = useState("");
   const [checkingPincode, setCheckingPincode] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   const itemsSubtotal = useMemo(
     () => items.reduce((total, item) => total + item.price * item.quantity, 0),
@@ -76,6 +84,60 @@ function CartPage() {
     return () => window.clearTimeout(timer);
   }, [pincode, itemsSubtotal, calculateDelivery]);
 
+  const handleCheckout = async () => {
+    if (!deliveryQuote) {
+      toast.error("Enter a valid pincode to calculate delivery.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const result = await createOrder({
+        data: {
+          fullName,
+          email,
+          phone,
+          pincode,
+          address,
+          deliveryFee: deliveryQuote.deliveryFee,
+          items: items.map((item) => ({
+            productId: item.productId || item.id.split(":")[0],
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            size: item.size || "Standard",
+          })),
+        },
+      });
+      clearCart();
+      setOrderId(result.displayId);
+      toast.success(`Order ${result.displayId} placed successfully`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to place order.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (orderId) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
+        <ShoppingBag className="mx-auto h-16 w-16 text-primary" />
+        <h1 className="mt-6 text-3xl font-bold text-primary">Order placed</h1>
+        <p className="mt-2 text-muted-foreground">
+          Your order <span className="font-semibold text-foreground">#{orderId}</span> has been
+          received. We&apos;ll confirm delivery shortly.
+        </p>
+        <Link
+          to="/shop"
+          className="mt-8 inline-flex rounded-full bg-primary px-8 py-3 font-bold text-primary-foreground hover:opacity-90"
+        >
+          Continue shopping
+        </Link>
+      </div>
+    );
+  }
+
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6">
@@ -106,12 +168,46 @@ function CartPage() {
               <h2 className="font-bold text-lg">Your items</h2>
               <div className="mt-5 space-y-4">
                 {items.map((item) => (
-                  <div key={item.id} className="flex items-start justify-between gap-4 border-b border-border pb-4 last:border-0 last:pb-0">
-                    <div>
+                  <div
+                    key={item.id}
+                    className="flex items-start justify-between gap-4 border-b border-border pb-4 last:border-0 last:pb-0"
+                  >
+                    <div className="min-w-0 flex-1">
                       <div className="font-medium">{item.name}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">Qty: {item.quantity}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {item.size ? `Size: ${item.size}` : null}
+                      </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        <button
+                          type="button"
+                          aria-label="Decrease quantity"
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="grid h-8 w-8 place-items-center rounded-lg border border-border hover:bg-accent"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="min-w-8 text-center text-sm font-medium">{item.quantity}</span>
+                        <button
+                          type="button"
+                          aria-label="Increase quantity"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="grid h-8 w-8 place-items-center rounded-lg border border-border hover:bg-accent"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Remove item"
+                          onClick={() => removeItem(item.id)}
+                          className="ml-2 grid h-8 w-8 place-items-center rounded-lg text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="font-semibold">{formatIndianCurrency(item.price * item.quantity)}</div>
+                    <div className="font-semibold">
+                      {formatIndianCurrency(item.price * item.quantity)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -226,11 +322,12 @@ function CartPage() {
             </div>
             <button
               type="button"
-              disabled={!deliveryQuote || !address.trim()}
+              disabled={!deliveryQuote || !address.trim() || !fullName.trim() || submitting}
+              onClick={() => void handleCheckout()}
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
               <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-              Proceed to checkout
+              {submitting ? "Placing order..." : "Proceed to checkout"}
             </button>
             <p className="mt-3 text-center text-[11px] text-muted-foreground">
               Free delivery on orders above {formatIndianCurrency(FREE_DELIVERY_ABOVE)}

@@ -1,7 +1,64 @@
 import { createServerFn } from "@tanstack/react-start";
 import prisma from "@/lib/prisma";
-import { formatCurrency, formatPriceRange, productShortId, sanitizeImageUrl } from "@/lib/admin-utils";
-import type { CreateProductInput } from "@/lib/product-form-types";
+import { formatPriceRange, productShortId, sanitizeImageUrl } from "@/lib/admin-utils";
+import {
+  createProductSchema,
+  updateProductSchema,
+  type ValidatedCreateProductInput,
+} from "@/lib/product-schema";
+
+function productScalars(data: ValidatedCreateProductInput) {
+  return {
+    name: data.name,
+    category: data.category,
+    description: data.description,
+    image: data.image,
+    weight: data.weight || null,
+    gallery: data.gallery,
+    keyIngredients: data.keyIngredients,
+    skinType: data.skinType,
+    benefit: data.benefit,
+    additionalInfo:
+      Object.keys(data.additionalInfo).length > 0 ? data.additionalInfo : undefined,
+    note: data.note || null,
+    dispatchmentDetails: data.dispatchmentDetails || null,
+    returnableInfo: data.returnableInfo || null,
+    features: data.features,
+    isBestSeller: data.isBestSeller,
+    salesCount: data.salesCount,
+    excerpt: data.excerpt || null,
+    totalRating: data.totalRating,
+    brandName: data.brandName || null,
+    brandImage: data.brandImage || null,
+    dispatchTime: data.dispatchTime || null,
+    isReturnable: data.isReturnable,
+    stockStatus: data.stockStatus,
+  };
+}
+
+function productRelations(data: ValidatedCreateProductInput) {
+  return {
+    sizes: {
+      create: data.sizes.map((s) => ({ size: s.size, price: s.price })),
+    },
+    quantityVariants: {
+      create: data.quantityVariants.map((qv, index) => ({
+        quantity: qv.quantity,
+        pricePerUnit: qv.pricePerUnit,
+        savingsPercent: qv.savingsPercent,
+        savedAmount: qv.savedAmount,
+        position: index,
+      })),
+    },
+    reviews: {
+      create: data.reviews.map((r) => ({
+        userName: r.userName,
+        rating: r.rating,
+        comment: r.comment,
+      })),
+    },
+  };
+}
 
 export const getAdminProducts = createServerFn({ method: "GET" }).handler(async () => {
   const products = await prisma.product.findMany({
@@ -43,77 +100,105 @@ export const getAdminProductStats = createServerFn({ method: "GET" }).handler(as
 });
 
 export const getAdminProductById = createServerFn({ method: "GET" })
-  .validator((id: string) => id)
+  .validator((id: string) => {
+    if (!id?.trim()) throw new Error("Product id is required.");
+    return id.trim();
+  })
   .handler(async ({ data: id }) => {
     const product = await prisma.product.findUnique({
       where: { id },
-      include: { sizes: true, reviews: true },
+      include: {
+        sizes: true,
+        quantityVariants: { orderBy: { position: "asc" } },
+        reviews: { orderBy: { createdAt: "asc" } },
+      },
     });
 
     if (!product) return null;
 
-    const minPrice = product.sizes.length > 0 ? Math.min(...product.sizes.map((s) => s.price)) : 0;
+    const additionalInfo =
+      product.additionalInfo &&
+      typeof product.additionalInfo === "object" &&
+      !Array.isArray(product.additionalInfo)
+        ? (product.additionalInfo as Record<string, string>)
+        : {};
 
     return {
       id: product.id,
       name: product.name,
       category: product.category,
       description: product.description,
-      price: minPrice,
+      keyIngredients: product.keyIngredients,
+      skinType: product.skinType,
+      benefit: product.benefit,
+      weight: product.weight ?? "",
       image: sanitizeImageUrl(product.image),
-      isListed: product.isListed,
-      stockStatus: product.stockStatus,
+      gallery: product.gallery.map(sanitizeImageUrl),
+      isBestSeller: product.isBestSeller,
       salesCount: product.salesCount,
+      excerpt: product.excerpt ?? "",
+      totalRating: product.totalRating,
+      brandName: product.brandName ?? "",
+      brandImage: product.brandImage ?? "",
+      stockStatus: product.stockStatus,
+      dispatchTime: product.dispatchTime ?? "",
+      isReturnable: product.isReturnable,
+      isListed: product.isListed,
+      sizes: product.sizes.map((s) => ({ id: s.id, size: s.size, price: s.price })),
+      quantityVariants: product.quantityVariants.map((qv) => ({
+        id: qv.id,
+        quantity: qv.quantity,
+        pricePerUnit: qv.pricePerUnit,
+        savingsPercent: qv.savingsPercent,
+        savedAmount: qv.savedAmount,
+      })),
+      features: product.features,
+      additionalInfo,
+      note: product.note ?? "",
+      dispatchmentDetails: product.dispatchmentDetails ?? "",
+      returnableInfo: product.returnableInfo ?? "",
+      reviews: product.reviews.map((r) => ({
+        id: r.id,
+        userName: r.userName,
+        rating: r.rating,
+        comment: r.comment,
+      })),
     };
   });
 
+async function replaceProductRelations(productId: string, data: ValidatedCreateProductInput) {
+  await prisma.$transaction([
+    prisma.size.deleteMany({ where: { productId } }),
+    prisma.quantityVariant.deleteMany({ where: { productId } }),
+    prisma.review.deleteMany({ where: { productId } }),
+    prisma.product.update({
+      where: { id: productId },
+      data: {
+        ...productScalars(data),
+        ...productRelations(data),
+      },
+    }),
+  ]);
+}
+
+export const updateAdminProduct = createServerFn({ method: "POST" })
+  .validator((data: unknown) => updateProductSchema.parse(data))
+  .handler(async ({ data }) => {
+    const existing = await prisma.product.findUnique({ where: { id: data.id } });
+    if (!existing) throw new Error("Product not found");
+
+    const { id, ...input } = data;
+    await replaceProductRelations(id, input);
+    return { id };
+  });
+
 export const createAdminProduct = createServerFn({ method: "POST" })
-  .validator((data: CreateProductInput) => data)
+  .validator((data: unknown) => createProductSchema.parse(data))
   .handler(async ({ data }) => {
     const product = await prisma.product.create({
       data: {
-        name: data.name,
-        category: data.category,
-        description: data.description,
-        image: data.image,
-        weight: data.weight || null,
-        gallery: data.gallery,
-        keyIngredients: data.keyIngredients,
-        skinType: data.skinType,
-        benefit: data.benefit,
-        additionalInfo: Object.keys(data.additionalInfo).length > 0 ? data.additionalInfo : undefined,
-        note: data.note || null,
-        dispatchmentDetails: data.dispatchmentDetails || null,
-        returnableInfo: data.returnableInfo || null,
-        features: data.features,
-        isBestSeller: data.isBestSeller,
-        salesCount: data.salesCount,
-        excerpt: data.excerpt || null,
-        totalRating: data.totalRating,
-        brandName: data.brandName || null,
-        brandImage: data.brandImage || null,
-        dispatchTime: data.dispatchTime || null,
-        isReturnable: data.isReturnable,
-        stockStatus: data.stockStatus,
-        sizes: {
-          create: data.sizes.map((s) => ({ size: s.size, price: s.price })),
-        },
-        quantityVariants: {
-          create: data.quantityVariants.map((qv, index) => ({
-            quantity: qv.quantity,
-            pricePerUnit: qv.pricePerUnit,
-            savingsPercent: qv.savingsPercent,
-            savedAmount: qv.savedAmount,
-            position: index,
-          })),
-        },
-        reviews: {
-          create: data.reviews.map((r) => ({
-            userName: r.userName,
-            rating: r.rating,
-            comment: r.comment,
-          })),
-        },
+        ...productScalars(data),
+        ...productRelations(data),
       },
     });
 
@@ -121,7 +206,10 @@ export const createAdminProduct = createServerFn({ method: "POST" })
   });
 
 export const deleteAdminProduct = createServerFn({ method: "POST" })
-  .validator((id: string) => id)
+  .validator((id: string) => {
+    if (!id?.trim()) throw new Error("Product id is required.");
+    return id.trim();
+  })
   .handler(async ({ data: id }) => {
     await prisma.product.delete({ where: { id } });
     return { success: true };

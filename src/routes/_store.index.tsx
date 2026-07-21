@@ -7,61 +7,28 @@ import {
   ShieldCheck,
   Sparkles,
   Truck,
+  Package,
 } from "lucide-react";
 import { getStoreCatalogues, type Catalogue } from "@/server-fns/catalogues";
+import { getStoreHomeData } from "@/server-fns/store-products";
+import { useCartStore } from "@/lib/cart-store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_store/")({
   loader: async () => {
     try {
-      return { catalogues: await getStoreCatalogues() };
+      const [catalogues, home] = await Promise.all([getStoreCatalogues(), getStoreHomeData()]);
+      return { catalogues, categories: home.categories, bestSellers: home.bestSellers };
     } catch {
-      return { catalogues: [] as Catalogue[] };
+      return {
+        catalogues: [] as Catalogue[],
+        categories: [] as Awaited<ReturnType<typeof getStoreHomeData>>["categories"],
+        bestSellers: [] as Awaited<ReturnType<typeof getStoreHomeData>>["bestSellers"],
+      };
     }
   },
   component: StoreHome,
 });
-
-const categories = [
-  { name: "Bio Dry Amenities", slug: "bio-dry-amenities", count: 0, initial: "B" },
-  { name: "Bio Wet Amenities", slug: "bio-wet-amenities", count: 3, initial: "B" },
-  { name: "Bulk & Brackets", slug: "bulk-and-brackets", count: 0, initial: "B" },
-  { name: "Dry Amenities", slug: "dry-amenities", count: 0, initial: "D" },
-  { name: "Wet Amenities", slug: "wet-amenities", count: 0, initial: "W" },
-  { name: "Tray Amenities", slug: "tray-amenities", count: 0, initial: "T" },
-  { name: "Housekeeping", slug: "housekeeping", count: 0, initial: "H" },
-  { name: "Coffee & Beverages", slug: "coffee-and-beverages", count: 0, initial: "C" },
-  { name: "Others", slug: "others", count: 0, initial: "O" },
-] as const;
-
-const bestSellers = [
-  {
-    id: "E2CDUUPQ",
-    name: "Bio Bergamot & Patchouli Body Lotion 380ml (Biotique Royal) Refillable",
-    category: "Bio Wet Amenities",
-    price: "₹200",
-    size: "380ml",
-    outOfStock: true,
-    bestseller: false,
-  },
-  {
-    id: "0FRQHV2W",
-    name: "Bio Bergamot & Patchouli Hand Wash 380ml (Biotique Royal) Refillable",
-    category: "Bio Wet Amenities",
-    price: "₹200",
-    size: "380ml",
-    outOfStock: false,
-    bestseller: true,
-  },
-  {
-    id: "BW6KXRQI",
-    name: "Bio Bergamot & Patchouli Hair Conditioner 380ml (Biotique Royal) Refillable",
-    category: "Bio Wet Amenities",
-    price: "₹200",
-    size: "380ml",
-    outOfStock: false,
-    bestseller: false,
-  },
-] as const;
 
 function CatalogueMenu({
   catalogues,
@@ -99,20 +66,30 @@ function CatalogueMenu({
             {catalogues.length === 0 ? (
               <div className="px-4 py-3 text-sm text-muted-foreground">No catalogues uploaded yet.</div>
             ) : (
-              catalogues.map((catalogue) => (
-                <a
-                  key={catalogue.id}
-                  href={catalogue.pdfUrl!}
-                  download={catalogue.fileName ?? true}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-primary hover:text-primary-foreground"
-                  onClick={() => setOpen(false)}
-                >
-                  <span>{catalogue.name}</span>
-                  <Download className="h-4 w-4" aria-hidden="true" />
-                </a>
-              ))
+              catalogues.map((catalogue) =>
+                catalogue.pdfUrl ? (
+                  <a
+                    key={catalogue.id}
+                    href={catalogue.pdfUrl}
+                    download={catalogue.fileName ?? true}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-primary hover:text-primary-foreground"
+                    onClick={() => setOpen(false)}
+                  >
+                    <span>{catalogue.name}</span>
+                    <Download className="h-4 w-4" aria-hidden="true" />
+                  </a>
+                ) : (
+                  <div
+                    key={catalogue.id}
+                    className="flex items-center justify-between px-4 py-3 text-sm text-muted-foreground"
+                  >
+                    <span>{catalogue.name}</span>
+                    <span className="text-xs">No PDF</span>
+                  </div>
+                ),
+              )
             )}
           </div>
         </div>
@@ -122,7 +99,8 @@ function CatalogueMenu({
 }
 
 function StoreHome() {
-  const { catalogues } = Route.useLoaderData();
+  const { catalogues, categories, bestSellers } = Route.useLoaderData();
+  const addItem = useCartStore((state) => state.addItem);
 
   return (
     <main className="flex-1">
@@ -144,7 +122,7 @@ function StoreHome() {
                 hotels, resorts, and corporate institutions.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <CatalogueMenu catalogues={catalogues} openUp>
+                <CatalogueMenu catalogues={catalogues}>
                   <span className="group inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground hover:opacity-90">
                     View catalogue
                     <ArrowRight className="h-4 w-4 group-hover:translate-x-1" aria-hidden="true" />
@@ -242,49 +220,81 @@ function StoreHome() {
               View all →
             </Link>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {bestSellers.map((product) => (
-              <Link
-                key={product.id}
-                to="/product/$id"
-                params={{ id: product.id }}
-                className="group block overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-lg"
-              >
-                <div className="relative grid aspect-square place-items-center bg-secondary/50">
-                  <div className="font-montserrat text-6xl font-bold text-primary/20">HT</div>
-                  <span className="absolute top-3 left-3 rounded-md bg-foreground px-2.5 py-1 text-[11px] font-semibold text-background">
-                    {product.size}
-                  </span>
-                  {product.outOfStock ? (
-                    <span className="absolute top-3 right-3 rounded-md bg-destructive px-2 py-1 text-[11px] font-medium text-destructive-foreground">
-                      Out of Stock
-                    </span>
-                  ) : null}
-                  {product.bestseller ? (
-                    <span className="absolute top-3 right-3 rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground">
-                      Bestseller
-                    </span>
-                  ) : null}
-                </div>
-                <div className="p-5">
-                  <div className="text-xs text-muted-foreground">{product.category}</div>
-                  <div className="mt-1 line-clamp-2 font-medium group-hover:text-primary">
-                    {product.name}
+          {bestSellers.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border px-6 py-16 text-center text-muted-foreground">
+              <Package className="mx-auto h-12 w-12 opacity-40" aria-hidden="true" />
+              <p className="mt-4">No listed products yet.</p>
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {bestSellers.map((product) => (
+                <Link
+                  key={product.id}
+                  to="/product/$id"
+                  params={{ id: product.id }}
+                  className="group block overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-lg"
+                >
+                  <div className="relative grid aspect-square place-items-center overflow-hidden bg-secondary/50">
+                    {product.image ? (
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="font-montserrat text-6xl font-bold text-primary/20">HT</div>
+                    )}
+                    {product.sizeLabel ? (
+                      <span className="absolute top-3 left-3 rounded-md bg-foreground px-2.5 py-1 text-[11px] font-semibold text-background">
+                        {product.sizeLabel}
+                      </span>
+                    ) : null}
+                    {product.outOfStock ? (
+                      <span className="absolute top-3 right-3 rounded-md bg-destructive px-2 py-1 text-[11px] font-medium text-destructive-foreground">
+                        Out of Stock
+                      </span>
+                    ) : product.bestseller ? (
+                      <span className="absolute top-3 right-3 rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground">
+                        Bestseller
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="mt-3 flex items-center justify-between gap-2">
-                    <div className="font-semibold">{product.price}</div>
-                    <span
-                      className={`rounded-full bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 ${
-                        product.outOfStock ? "cursor-not-allowed opacity-40" : ""
-                      }`}
-                    >
-                      Add to cart
-                    </span>
+                  <div className="p-5">
+                    <div className="text-xs text-muted-foreground">{product.category}</div>
+                    <div className="mt-1 line-clamp-2 font-medium group-hover:text-primary">
+                      {product.name}
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <div className="font-semibold">{product.priceLabel}</div>
+                      <button
+                        type="button"
+                        disabled={product.outOfStock}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          if (product.outOfStock) return;
+                          addItem({
+                            id: `${product.id}:${product.sizeLabel || "Standard"}`,
+                            productId: product.id,
+                            name: product.name,
+                            price: product.minPrice,
+                            size: product.sizeLabel || "Standard",
+                            image: product.image,
+                          });
+                          toast.success("Added to cart");
+                        }}
+                        className={`rounded-full bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 ${
+                          product.outOfStock ? "cursor-not-allowed opacity-40" : ""
+                        }`}
+                      >
+                        Add to cart
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </main>

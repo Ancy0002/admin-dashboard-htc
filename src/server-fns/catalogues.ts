@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { MAX_PDF_BYTES } from "@/lib/file-utils";
 import { CATALOGUE_CATEGORIES } from "@/lib/catalogue-categories";
 import prisma from "@/lib/prisma";
 import { deleteCataloguePdfFile, uploadCataloguePdfFile } from "@/lib/storage";
@@ -89,6 +90,10 @@ export const saveCatalogue = createServerFn({ method: "POST" })
     if (data.contentBase64 && data.fileName) {
       const content = Buffer.from(data.contentBase64, "base64");
       if (content.length === 0) throw new Error("The uploaded file is empty.");
+      if (content.length > MAX_PDF_BYTES) throw new Error("PDF must be under 10MB.");
+      if (content.subarray(0, 4).toString() !== "%PDF") {
+        throw new Error("Only PDF files are allowed.");
+      }
 
       if (row.pdfUrl) {
         try {
