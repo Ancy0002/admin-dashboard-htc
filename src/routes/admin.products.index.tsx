@@ -17,6 +17,7 @@ import {
   deleteAdminProduct,
   getAdminProductStats,
   getAdminProducts,
+  setAdminProductListed,
 } from "@/server-fns/products";
 
 export const Route = createFileRoute("/admin/products/")({
@@ -31,9 +32,11 @@ function AdminProducts() {
   const { products, stats } = Route.useLoaderData();
   const router = useRouter();
   const deleteProduct = useServerFn(deleteAdminProduct);
+  const setListed = useServerFn(setAdminProductListed);
 
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -58,6 +61,21 @@ function AdminProducts() {
       toast.error("Failed to delete product. Please try again.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleToggleListed = async (id: string, nextListed: boolean) => {
+    setTogglingId(id);
+    try {
+      await setListed({ data: { id, isListed: nextListed } });
+      toast.success(
+        nextListed ? "Product listed on hatikvahcare.com" : "Product hidden from website",
+      );
+      await router.invalidate();
+    } catch {
+      toast.error("Failed to update visibility.");
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -86,7 +104,18 @@ function AdminProducts() {
       <div className="flex items-start justify-between gap-4 border-b border-border/60 px-10 pt-10 pb-6">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Products</h1>
-          <p className="mt-1 text-muted-foreground">Manage your e-commerce product catalog.</p>
+          <p className="mt-1 text-muted-foreground">
+            Manage catalog synced live to{" "}
+            <a
+              href={STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              hatikvahcare.com
+            </a>
+            .
+          </p>
         </div>
         <Link
           to="/admin/products/new"
@@ -179,17 +208,29 @@ function AdminProducts() {
                     <td className="p-4 text-sm">{product.category}</td>
                     <td className="p-4 text-sm font-medium">{product.priceRange}</td>
                     <td className="p-4">
-                      {product.isListed ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-1 text-[11px] font-medium text-emerald-600">
-                          <Eye className="h-3 w-3" aria-hidden="true" />
-                          LISTED
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">
-                          <EyeOff className="h-3 w-3" aria-hidden="true" />
-                          HIDDEN
-                        </span>
-                      )}
+                      <button
+                        type="button"
+                        disabled={togglingId === product.id}
+                        onClick={() => handleToggleListed(product.id, !product.isListed)}
+                        className="disabled:opacity-50"
+                        title={
+                          product.isListed
+                            ? "Click to hide from website"
+                            : "Click to list on website"
+                        }
+                      >
+                        {product.isListed ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-1 text-[11px] font-medium text-emerald-600">
+                            <Eye className="h-3 w-3" aria-hidden="true" />
+                            LISTED
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">
+                            <EyeOff className="h-3 w-3" aria-hidden="true" />
+                            HIDDEN
+                          </span>
+                        )}
+                      </button>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-2">

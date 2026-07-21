@@ -6,6 +6,45 @@ import {
   updateProductSchema,
   type ValidatedCreateProductInput,
 } from "@/lib/product-schema";
+import {
+  deleteProductImageFiles,
+  persistProductImage,
+  persistProductImages,
+  uploadProductImageDataUrl,
+} from "@/lib/storage";
+import { requireAdminSessionData } from "@/lib/admin-session";
+
+async function assertAdmin() {
+  await requireAdminSessionData();
+}
+
+async function withPersistedImages(
+  data: ValidatedCreateProductInput,
+): Promise<ValidatedCreateProductInput> {
+  const [image, gallery, brandImage] = await Promise.all([
+    persistProductImage(data.image),
+    persistProductImages(data.gallery),
+    data.brandImage?.trim()
+      ? persistProductImage(data.brandImage)
+      : Promise.resolve(data.brandImage),
+  ]);
+
+  return { ...data, image, gallery, brandImage };
+}
+
+/** Upload a product image data-URL to public storage; returns a shareable URL. */
+export const uploadAdminProductImage = createServerFn({ method: "POST" })
+  .validator((data: { dataUrl: string }) => {
+    const dataUrl = data?.dataUrl?.trim() ?? "";
+    if (!dataUrl.startsWith("data:")) throw new Error("Invalid image data.");
+    if (dataUrl.length > 6_000_000) throw new Error("Image is too large.");
+    return { dataUrl };
+  })
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const url = await uploadProductImageDataUrl(data.dataUrl);
+    return { url };
+  });
 
 function productScalars(data: ValidatedCreateProductInput) {
   return {
@@ -25,6 +64,7 @@ function productScalars(data: ValidatedCreateProductInput) {
     returnableInfo: data.returnableInfo || null,
     features: data.features,
     isBestSeller: data.isBestSeller,
+    isListed: data.isListed,
     salesCount: data.salesCount,
     excerpt: data.excerpt || null,
     totalRating: data.totalRating,
@@ -61,6 +101,7 @@ function productRelations(data: ValidatedCreateProductInput) {
 }
 
 export const getAdminProducts = createServerFn({ method: "GET" }).handler(async () => {
+  await assertAdmin();
   const products = await prisma.product.findMany({
     include: { sizes: true },
     orderBy: { createdAt: "desc" },
@@ -90,6 +131,7 @@ export const getAdminProducts = createServerFn({ method: "GET" }).handler(async 
 });
 
 export const getAdminProductStats = createServerFn({ method: "GET" }).handler(async () => {
+  await assertAdmin();
   const [total, active, outOfStock] = await Promise.all([
     prisma.product.count(),
     prisma.product.count({ where: { isListed: true, stockStatus: "IN_STOCK" } }),
@@ -105,6 +147,7 @@ export const getAdminProductById = createServerFn({ method: "GET" })
     return id.trim();
   })
   .handler(async ({ data: id }) => {
+    await assertAdmin();
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
@@ -135,6 +178,7 @@ export const getAdminProductById = createServerFn({ method: "GET" })
       image: sanitizeImageUrl(product.image),
       gallery: product.gallery.map(sanitizeImageUrl),
       isBestSeller: product.isBestSeller,
+      isListed: product.isListed,
       salesCount: product.salesCount,
       excerpt: product.excerpt ?? "",
       totalRating: product.totalRating,
@@ -143,7 +187,6 @@ export const getAdminProductById = createServerFn({ method: "GET" })
       stockStatus: product.stockStatus,
       dispatchTime: product.dispatchTime ?? "",
       isReturnable: product.isReturnable,
-      isListed: product.isListed,
       sizes: product.sizes.map((s) => ({ id: s.id, size: s.size, price: s.price })),
       quantityVariants: product.quantityVariants.map((qv) => ({
         id: qv.id,
@@ -184,25 +227,52 @@ async function replaceProductRelations(productId: string, data: ValidatedCreateP
 export const updateAdminProduct = createServerFn({ method: "POST" })
   .validator((data: unknown) => updateProductSchema.parse(data))
   .handler(async ({ data }) => {
+    await assertAdmin();
     const existing = await prisma.product.findUnique({ where: { id: data.id } });
     if (!existing) throw new Error("Product not found");
 
     const { id, ...input } = data;
-    await replaceProductRelations(id, input);
+    const persisted = await withPersistedImages(input);
+    await replaceProductRelations(id, persisted);
+
+    const nextUrls = new Set(
+      [persisted.image, ...persisted.gallery, persisted.brandImage].filter(Boolean),
+    );
+    const removed = [existing.image, ...existing.gallery, existing.brandImage].filter(
+      (url): url is string => Boolean(url) && !nextUrls.has(url),
+    );
+    await deleteProductImageFiles(removed);
+
     return { id };
   });
 
 export const createAdminProduct = createServerFn({ method: "POST" })
   .validator((data: unknown) => createProductSchema.parse(data))
   .handler(async ({ data }) => {
+    await assertAdmin();
+    const persisted = await withPersistedImages(data);
     const product = await prisma.product.create({
       data: {
-        ...productScalars(data),
-        ...productRelations(data),
+        ...productScalars(persisted),
+        ...productRelations(persisted),
       },
     });
 
     return { id: product.id };
+  });
+
+export const setAdminProductListed = createServerFn({ method: "POST" })
+  .validator((data: { id: string; isListed: boolean }) => {
+    if (!data.id?.trim()) throw new Error("Product id is required.");
+    return { id: data.id.trim(), isListed: Boolean(data.isListed) };
+  })
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    await prisma.product.update({
+      where: { id: data.id },
+      data: { isListed: data.isListed },
+    });
+    return { success: true, isListed: data.isListed };
   });
 
 export const deleteAdminProduct = createServerFn({ method: "POST" })
@@ -211,6 +281,18 @@ export const deleteAdminProduct = createServerFn({ method: "POST" })
     return id.trim();
   })
   .handler(async ({ data: id }) => {
+    await assertAdmin();
+    const existing = await prisma.product.findUnique({
+      where: { id },
+      select: { image: true, gallery: true, brandImage: true },
+    });
+    if (!existing) throw new Error("Product not found");
+
     await prisma.product.delete({ where: { id } });
+    await deleteProductImageFiles([
+      existing.image,
+      ...existing.gallery,
+      existing.brandImage,
+    ]);
     return { success: true };
   });

@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Eye, EyeOff } from "lucide-react";
 import { setStoreSession } from "@/lib/store-auth";
-import { loginStoreUser } from "@/server-fns/store-auth";
+import { getAdminAuth, loginStoreUser } from "@/server-fns/store-auth";
 
 export const Route = createFileRoute("/_store/login")({
+  beforeLoad: async () => {
+    const auth = await getAdminAuth();
+    if (auth.authenticated) {
+      throw redirect({ to: "/admin" });
+    }
+  },
   component: LoginPage,
 });
 

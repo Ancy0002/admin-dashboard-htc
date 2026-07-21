@@ -162,23 +162,23 @@ export function StoreNavbar() {
                     >
                       Sign In
                     </Link>
-                    <Link
+                    {/* <Link
                       to="/register"
                       onClick={() => setAccountOpen(false)}
                       className="block rounded-lg px-3 py-2 text-sm hover:bg-accent"
                     >
                       Create Account
-                    </Link>
+                    </Link> */}
                   </>
                 )}
-                <div className="my-1 border-t border-border" />
+                {/* <div className="my-1 border-t border-border" />
                 <Link
                   to="/admin"
                   onClick={() => setAccountOpen(false)}
                   className="block rounded-lg px-3 py-2 text-sm hover:bg-accent"
                 >
                   Admin Panel
-                </Link>
+                </Link> */}
               </div>
             ) : null}
           </div>

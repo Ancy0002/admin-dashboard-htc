@@ -31,6 +31,7 @@ export const createProductSchema = z.object({
   image: z.string().min(1).max(6_000_000),
   gallery: z.array(z.string().max(6_000_000)).max(20),
   isBestSeller: z.boolean(),
+  isListed: z.boolean(),
   salesCount: z.number().int().min(0).max(10_000_000),
   excerpt: z.string().max(2000),
   totalRating: z.number().min(0).max(5),

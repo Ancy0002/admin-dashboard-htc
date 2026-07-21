@@ -5,7 +5,11 @@ import { Image, Plus, Save, Trash2, TrendingUp, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { INPUT_CLASS, LABEL_CLASS } from "@/lib/admin-form-styles";
 import { readFileAsDataUrl } from "@/lib/file-utils";
-import { createAdminProduct, updateAdminProduct } from "@/server-fns/products";
+import {
+  createAdminProduct,
+  updateAdminProduct,
+  uploadAdminProductImage,
+} from "@/server-fns/products";
 import {
   PRODUCT_CATEGORIES,
   STOCK_STATUS_OPTIONS,
@@ -78,6 +82,7 @@ function buildPayload(state: {
   image: string;
   gallery: string[];
   isBestSeller: boolean;
+  isListed: boolean;
   salesCount: string;
   excerpt: string;
   totalRating: string;
@@ -113,6 +118,7 @@ function buildPayload(state: {
     image: state.image.trim() || "https://placehold.co/600x600?text=Product",
     gallery: state.gallery.filter(Boolean),
     isBestSeller: state.isBestSeller,
+    isListed: state.isListed,
     salesCount: Number(state.salesCount) || 0,
     excerpt: state.excerpt.trim(),
     totalRating: Number(state.totalRating) || 0,
@@ -193,10 +199,12 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
   const router = useRouter();
   const createProduct = useServerFn(createAdminProduct);
   const updateProduct = useServerFn(updateAdminProduct);
+  const uploadImage = useServerFn(uploadAdminProductImage);
   const mainImageRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [name, setName] = useState(initialData?.name ?? "");
   const [category, setCategory] = useState(
     initialData?.category ?? PRODUCT_CATEGORIES[0],
@@ -209,6 +217,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
   const [image, setImage] = useState(initialData?.image ?? "");
   const [gallery, setGallery] = useState<string[]>(initialData?.gallery ?? []);
   const [isBestSeller, setIsBestSeller] = useState(initialData?.isBestSeller ?? false);
+  const [isListed, setIsListed] = useState(initialData?.isListed ?? true);
   const [salesCount, setSalesCount] = useState(String(initialData?.salesCount ?? 0));
   const [excerpt, setExcerpt] = useState(initialData?.excerpt ?? "");
   const [totalRating, setTotalRating] = useState(String(initialData?.totalRating ?? 0));
@@ -233,21 +242,35 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
   const [returnableInfo, setReturnableInfo] = useState(initialData?.returnableInfo ?? "");
   const [reviews, setReviews] = useState<ReviewRow[]>(() => initReviews(initialData));
 
+  const uploadFileToStorage = async (file: File) => {
+    const dataUrl = await readFileAsDataUrl(file);
+    const result = await uploadImage({ data: { dataUrl } });
+    return result.url;
+  };
+
   const handleMainImageUpload = async (file: File) => {
+    setUploadingImage(true);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setImage(dataUrl);
+      const url = await uploadFileToStorage(file);
+      setImage(url);
+      toast.success("Image uploaded");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to upload image.");
+    } finally {
+      setUploadingImage(false);
     }
   };
 
   const handleGalleryUpload = async (files: FileList) => {
+    setUploadingImage(true);
     try {
-      const urls = await Promise.all(Array.from(files).map((file) => readFileAsDataUrl(file)));
+      const urls = await Promise.all(Array.from(files).map((file) => uploadFileToStorage(file)));
       setGallery((prev) => [...prev, ...urls]);
+      toast.success(urls.length === 1 ? "Gallery image uploaded" : `${urls.length} gallery images uploaded`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to upload gallery image.");
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -263,6 +286,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
       image,
       gallery,
       isBestSeller,
+      isListed,
       salesCount,
       excerpt,
       totalRating,
@@ -318,17 +342,17 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
             {mode === "edit" ? "Edit Product" : "Upload New Product"}
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Add a premium product to your e-commerce collection.
+            Saves directly to the shared catalog used by hatikvahcare.com.
           </p>
         </div>
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || uploadingImage}
           className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
         >
           <Save className="h-4 w-4" aria-hidden="true" />
-          {saving ? "Saving..." : "Save Product"}
+          {saving ? "Saving..." : uploadingImage ? "Uploading..." : "Save Product"}
         </button>
       </div>
 
@@ -338,8 +362,9 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
             <CardSection title="Main Product Image" icon={<Image className="h-5 w-5" aria-hidden="true" />}>
               <button
                 type="button"
+                disabled={uploadingImage}
                 onClick={() => mainImageRef.current?.click()}
-                className="relative flex aspect-square w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border-2 border-dashed border-border bg-secondary/30 transition hover:bg-secondary/50"
+                className="relative flex aspect-square w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border-2 border-dashed border-border bg-secondary/30 transition hover:bg-secondary/50 disabled:opacity-60"
               >
                 {image ? (
                   <img
@@ -352,20 +377,28 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
                     <div className="grid h-14 w-14 place-items-center rounded-xl bg-card">
                       <Upload className="h-5 w-5" aria-hidden="true" />
                     </div>
-                    <div className="font-semibold">Click to upload</div>
+                    <div className="font-semibold">
+                      {uploadingImage ? "Uploading..." : "Click to upload"}
+                    </div>
                     <div className="text-center text-xs text-muted-foreground">
-                      High resolution PNG or JPG
+                      Stored as a public URL for hatikvahcare.com
                       <br />
-                      (Recommended: 1000×1000px)
+                      High resolution PNG or JPG (Recommended: 1000×1000px)
                     </div>
                   </>
                 )}
+                {uploadingImage && image ? (
+                  <div className="absolute inset-0 grid place-items-center bg-background/60 text-sm font-medium">
+                    Uploading...
+                  </div>
+                ) : null}
               </button>
               <input
                 ref={mainImageRef}
                 type="file"
                 accept="image/*"
                 hidden
+                disabled={uploadingImage}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) void handleMainImageUpload(file);
@@ -380,7 +413,8 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
               action={
                 <button
                   type="button"
-                  className="text-sm text-primary"
+                  disabled={uploadingImage}
+                  className="text-sm text-primary disabled:opacity-50"
                   onClick={() => galleryRef.current?.click()}
                 >
                   Add More
@@ -393,6 +427,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
                 accept="image/*"
                 multiple
                 hidden
+                disabled={uploadingImage}
                 onChange={(e) => {
                   if (e.target.files?.length) void handleGalleryUpload(e.target.files);
                   e.target.value = "";
@@ -413,8 +448,9 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
                 ))}
                 <button
                   type="button"
+                  disabled={uploadingImage}
                   onClick={() => galleryRef.current?.click()}
-                  className="flex aspect-square w-32 items-center justify-center rounded-xl border-2 border-dashed border-border text-2xl text-muted-foreground hover:bg-secondary/40"
+                  className="flex aspect-square w-32 items-center justify-center rounded-xl border-2 border-dashed border-border text-2xl text-muted-foreground hover:bg-secondary/40 disabled:opacity-50"
                 >
                   +
                 </button>
@@ -513,6 +549,18 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
                   </div>
                   <Toggle checked={isBestSeller} onChange={setIsBestSeller} />
                 </div>
+                <div className="flex items-center justify-between rounded-xl bg-secondary/50 p-4">
+                  <div>
+                    <div className="text-sm font-semibold">Listed on Website</div>
+                    <div className="text-xs text-muted-foreground">
+                      Show on hatikvahcare.com when enabled
+                    </div>
+                  </div>
+                  <Toggle checked={isListed} onChange={setIsListed} />
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
                 <div>
                   <label className={LABEL_CLASS}>
                     <span className="inline-flex items-center gap-1.5">

@@ -7,7 +7,7 @@ function getS3Client() {
 
   if (!accessKeyId || !secretAccessKey || !endpoint) {
     throw new Error(
-      "PDF storage is not configured. Add S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and S3_ENDPOINT.",
+      "Storage is not configured. Add S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and S3_ENDPOINT.",
     );
   }
 
@@ -37,6 +37,54 @@ function getPublicObjectUrl(key: string) {
     throw new Error("S3_ENDPOINT is not configured.");
   }
   return `${endpoint.replace(/\/$/, "")}/${bucket}/${key}`;
+}
+
+function parseDataUrl(dataUrl: string) {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) throw new Error("Invalid image data.");
+  return {
+    contentType: match[1],
+    buffer: Buffer.from(match[2], "base64"),
+  };
+}
+
+function extensionForContentType(contentType: string) {
+  if (contentType.includes("png")) return "png";
+  if (contentType.includes("webp")) return "webp";
+  if (contentType.includes("gif")) return "gif";
+  return "jpg";
+}
+
+/** Upload a data-URL image to shared storage so hatikvahcare.com can load it. */
+export async function uploadProductImageDataUrl(dataUrl: string, folder = "uploads") {
+  const { contentType, buffer } = parseDataUrl(dataUrl);
+  const ext = extensionForContentType(contentType);
+  const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+
+  await getS3Client().send(
+    new PutObjectCommand({
+      Bucket: getBucketName(),
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+    }),
+  );
+
+  return getPublicObjectUrl(key);
+}
+
+/** Keep existing http(s) URLs; upload data URLs to S3. */
+export async function persistProductImage(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  if (trimmed.startsWith("data:")) {
+    return uploadProductImageDataUrl(trimmed);
+  }
+  return trimmed;
+}
+
+export async function persistProductImages(values: string[]) {
+  return Promise.all(values.map((value) => persistProductImage(value)));
 }
 
 function getObjectKeyFromUrl(url: string) {
@@ -69,7 +117,7 @@ export async function uploadCataloguePdfFile(id: string, fileName: string, conte
   };
 }
 
-export async function deleteCataloguePdfFile(url: string | null | undefined) {
+export async function deleteStorageObject(url: string | null | undefined) {
   if (!url) return;
 
   const key = getObjectKeyFromUrl(url);
@@ -79,6 +127,23 @@ export async function deleteCataloguePdfFile(url: string | null | undefined) {
     new DeleteObjectCommand({
       Bucket: getBucketName(),
       Key: key,
+    }),
+  );
+}
+
+export async function deleteCataloguePdfFile(url: string | null | undefined) {
+  await deleteStorageObject(url);
+}
+
+/** Best-effort cleanup of product image objects (ignores missing/foreign URLs). */
+export async function deleteProductImageFiles(urls: Array<string | null | undefined>) {
+  await Promise.all(
+    urls.map(async (url) => {
+      try {
+        await deleteStorageObject(url);
+      } catch {
+        // Ignore cleanup failures so product DB deletes still succeed.
+      }
     }),
   );
 }

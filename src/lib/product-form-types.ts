@@ -19,6 +19,7 @@ export type CreateProductInput = {
   image: string;
   gallery: string[];
   isBestSeller: boolean;
+  isListed: boolean;
   salesCount: number;
   excerpt: string;
   totalRating: number;
@@ -74,6 +75,7 @@ export type ProductFormInitialData = {
   image: string;
   gallery: string[];
   isBestSeller: boolean;
+  isListed: boolean;
   salesCount: number;
   excerpt: string;
   totalRating: number;

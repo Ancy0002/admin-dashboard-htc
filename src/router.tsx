@@ -9,7 +9,11 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    defaultPreloadStaleTime: 0,
+    defaultPreload: "intent",
+    defaultPreloadDelay: 0,
+    // Keep preloaded admin routes warm so sidebar clicks feel instant.
+    defaultPreloadStaleTime: 30_000,
+    defaultStaleTime: 10_000,
   });
 
   return router;
