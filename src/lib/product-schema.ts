@@ -28,7 +28,7 @@ export const createProductSchema = z.object({
   skinType: z.string().max(200),
   benefit: z.string().max(2000),
   weight: z.string().max(100),
-  image: z.string().min(1, "Product image is required.").max(6_000_000),
+  image: z.string().max(6_000_000),
   gallery: z.array(z.string().max(6_000_000)).max(20),
   isBestSeller: z.boolean(),
   isListed: z.boolean(),

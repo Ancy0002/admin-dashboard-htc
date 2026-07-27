@@ -57,12 +57,6 @@ function normalizeProduct(data: ValidatedCreateProductInput): ValidatedCreatePro
   }
 
   const image = data.image.trim();
-  if (
-    data.isListed &&
-    (!image || image.includes("placehold.co") || image.startsWith("data:") || image.startsWith("blob:"))
-  ) {
-    throw new Error("Upload a product image before listing on the website.");
-  }
 
   return {
     ...data,

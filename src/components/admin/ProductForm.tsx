@@ -315,21 +315,6 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
       return;
     }
 
-    if (!payload.image.trim()) {
-      toast.error("Upload a product image.");
-      return;
-    }
-
-    if (
-      payload.isListed &&
-      (payload.image.includes("placehold.co") ||
-        payload.image.startsWith("data:") ||
-        payload.image.startsWith("blob:"))
-    ) {
-      toast.error("Upload a real product image before listing on hatikvahcare.com.");
-      return;
-    }
-
     // Keep quantity tiers priced — live site expects usable pricePerUnit values.
     const basePrice = payload.sizes[0]?.price ?? 0;
     payload.quantityVariants = (payload.quantityVariants.length
@@ -396,7 +381,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
       <div className="space-y-6 p-10">
         <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
           <div className="space-y-6">
-            <CardSection title="Main Product Image" icon={<Image className="h-5 w-5" aria-hidden="true" />}>
+            <CardSection title="Main Product Image (optional)" icon={<Image className="h-5 w-5" aria-hidden="true" />}>
               <button
                 type="button"
                 disabled={uploadingImage}
@@ -418,7 +403,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
                       {uploadingImage ? "Uploading..." : "Click to upload"}
                     </div>
                     <div className="text-center text-xs text-muted-foreground">
-                      Stored as a public URL for hatikvahcare.com
+                      Optional — you can save the product without an image
                       <br />
                       High resolution PNG or JPG (Recommended: 1000×1000px)
                     </div>
