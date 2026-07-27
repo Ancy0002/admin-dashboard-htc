@@ -236,9 +236,25 @@ function AdminProducts() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() =>
-                            window.open(`${STORE_URL}/product/${product.id}`, "_blank", "noopener,noreferrer")
-                          }
+                          onClick={() => {
+                            if (!product.isListed) {
+                              toast.error(
+                                "Product is hidden. Switch it to LISTED before viewing on the website.",
+                              );
+                              return;
+                            }
+                            if (!product.hasSizes) {
+                              toast.error(
+                                "Add at least one size/price in Edit — the live site needs it to show the product.",
+                              );
+                              return;
+                            }
+                            window.open(
+                              `${STORE_URL}/product/${product.id}`,
+                              "_blank",
+                              "noopener,noreferrer",
+                            );
+                          }}
                           className="rounded-md p-2 hover:bg-accent"
                           title="View on website"
                         >

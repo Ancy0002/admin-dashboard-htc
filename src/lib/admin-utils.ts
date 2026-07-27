@@ -1,17 +1,4 @@
-function getStorageEndpoint() {
-  return (
-    process.env.S3_ENDPOINT ||
-    process.env.NEXT_PUBLIC_MINIO_ENDPOINT ||
-    process.env.S3_PUBLIC_URL ||
-    ""
-  );
-}
-
-function getStorageBucket() {
-  return process.env.S3_BUCKET_NAME || process.env.NEXT_PUBLIC_MINIO_BUCKET_NAME || "";
-}
-
-/** Normalize stored image paths to public URLs the live site can load. */
+/** Normalize stored image paths to public URLs. */
 export function sanitizeImageUrl(url: string) {
   if (!url) return url;
   if (
@@ -23,8 +10,8 @@ export function sanitizeImageUrl(url: string) {
     return url;
   }
 
-  const endpoint = getStorageEndpoint();
-  const bucket = getStorageBucket();
+  const endpoint = process.env.S3_ENDPOINT || "";
+  const bucket = process.env.S3_BUCKET_NAME || "products";
   if (!endpoint || !bucket) return url;
 
   const key = url.replace(/^\//, "");
@@ -37,32 +24,26 @@ export function sanitizeImageUrl(url: string) {
 }
 
 export function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `₹${amount.toLocaleString("en-IN")}`;
 }
 
 export function formatIndianCurrency(amount: number) {
-  return `₹${Math.round(amount).toLocaleString("en-IN")}`;
-}
-
-export function formatProductPrice(amount: number) {
-  if (Number.isInteger(amount) || amount % 1 === 0) {
-    return `₹${amount.toLocaleString("en-IN")}`;
-  }
   return formatCurrency(amount);
 }
 
 export function formatPriceRange(min: number, max: number) {
-  return `${formatProductPrice(min)} - ${formatProductPrice(max)}`;
+  if (min === max) return formatCurrency(min);
+  return `${formatCurrency(min)} - ${formatCurrency(max)}`;
 }
 
 export function productShortId(id: string) {
-  return id.slice(-8).toLowerCase();
+  return id.slice(-6).toUpperCase();
 }
 
 export function formatDate(date: Date | string) {
   return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "2-digit",
+    day: "numeric",
+    month: "short",
     year: "numeric",
   });
 }

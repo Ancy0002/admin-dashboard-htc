@@ -1,33 +1,37 @@
-# admin-dashboard-htc
+# Admin dashboard (Vercel) → live storefront (https://hatikvahcare.com)
 
-HaTikvah admin dashboard (TanStack Start + Prisma + Supabase).
+## How product sync works
 
-## Local development
+This admin app writes products straight into Postgres with Prisma.
+
+If `DATABASE_URL` is the **same database** the live site uses, products you add here show on https://hatikvahcare.com — no storefront code changes.
+
+## Setup (local + Vercel)
+
+1. Copy env from the production server that hosts hatikvahcare.com into `.env` and Vercel:
+
+```env
+DATABASE_URL=...
+DIRECT_URL=...
+VITE_STORE_URL=https://hatikvahcare.com
+S3_ACCESS_KEY_ID=...
+S3_SECRET_ACCESS_KEY=...
+S3_ENDPOINT=...
+S3_REGION=...
+S3_BUCKET_NAME=...
+STORE_LOGIN_EMAIL=...
+STORE_LOGIN_PASSWORD=...
+```
+
+2. Run:
 
 ```bash
 npm install
-cp .env.example .env
-# Fill DATABASE_URL and DIRECT_URL from Supabase
 npm run dev
 ```
 
-Admin: http://localhost:8080/admin
+Admin: http://localhost:8080/login
 
-## Deploy on Vercel
+## Important
 
-The storefront works without a database. **Admin routes require PostgreSQL.**
-
-In Vercel → Project → Settings → Environment Variables, add:
-
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | Supabase **pooler** URL (port `6543`, include `?pgbouncer=true`) |
-| `DIRECT_URL` | Supabase **direct** URL (port `5432`) |
-| `VITE_STORE_URL` | Optional — customer site for "View on website" links |
-
-Use the same values as your local `.env` from the Hatikvah/Supabase project.
-
-After saving env vars, **redeploy** the project (Deployments → Redeploy).
-
-Build command (default): `npm run build`  
-Includes `prisma generate` automatically.
+Use the production `DATABASE_URL` from the server that hosts https://hatikvahcare.com. A different database will not update the live site.

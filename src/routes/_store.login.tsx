@@ -42,8 +42,8 @@ function LoginPage() {
   };
 
   return (
-    <main className="flex-1">
-      <div className="mx-auto max-w-md px-6 py-20">
+    <main className="flex flex-1 items-center justify-center">
+      <div className="w-full max-w-md px-6 py-12">
         <h1 className="text-3xl font-bold tracking-tight">Sign in</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Sign in to open the admin dashboard.

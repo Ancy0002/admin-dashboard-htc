@@ -20,22 +20,21 @@ function getS3Client() {
 }
 
 function getBucketName() {
-  return process.env.S3_BUCKET_NAME || process.env.NEXT_PUBLIC_MINIO_BUCKET_NAME || "products";
+  return process.env.S3_BUCKET_NAME || "products";
 }
 
 function getPublicObjectUrl(key: string) {
-  const endpoint =
-    process.env.S3_ENDPOINT || process.env.NEXT_PUBLIC_MINIO_ENDPOINT || "";
+  const endpoint = process.env.S3_ENDPOINT || "";
   const bucket = getBucketName();
-  const match = endpoint.match(/https:\/\/([^.]+)\.storage\.supabase\.co/);
+  if (!endpoint) {
+    throw new Error("S3_ENDPOINT is not configured.");
+  }
 
+  const match = endpoint.match(/https:\/\/([^.]+)\.storage\.supabase\.co/);
   if (match) {
     return `https://${match[1]}.supabase.co/storage/v1/object/public/${bucket}/${key}`;
   }
 
-  if (!endpoint) {
-    throw new Error("S3_ENDPOINT is not configured.");
-  }
   return `${endpoint.replace(/\/$/, "")}/${bucket}/${key}`;
 }
 

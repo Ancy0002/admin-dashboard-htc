@@ -19,17 +19,10 @@ import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminGalleryRouteImport } from './routes/admin.gallery'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminAnalysticRouteImport } from './routes/admin.analystic'
-import { Route as StoreShopRouteImport } from './routes/_store.shop'
-import { Route as StoreRegisterRouteImport } from './routes/_store.register'
 import { Route as StoreLoginRouteImport } from './routes/_store.login'
-import { Route as StoreContactRouteImport } from './routes/_store.contact'
-import { Route as StoreCartRouteImport } from './routes/_store.cart'
-import { Route as StoreAboutRouteImport } from './routes/_store.about'
 import { Route as AdminProductsIndexRouteImport } from './routes/admin.products.index'
 import { Route as AdminProductsNewRouteImport } from './routes/admin.products.new'
 import { Route as AdminProductsIdRouteImport } from './routes/admin.products.$id'
-import { Route as StoreProductIdRouteImport } from './routes/_store.product.$id'
-import { Route as StoreCategorySlugRouteImport } from './routes/_store.category.$slug'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -80,34 +73,9 @@ const AdminAnalysticRoute = AdminAnalysticRouteImport.update({
   path: '/analystic',
   getParentRoute: () => AdminRoute,
 } as any)
-const StoreShopRoute = StoreShopRouteImport.update({
-  id: '/shop',
-  path: '/shop',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreRegisterRoute = StoreRegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => StoreRoute,
-} as any)
 const StoreLoginRoute = StoreLoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreContactRoute = StoreContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreCartRoute = StoreCartRouteImport.update({
-  id: '/cart',
-  path: '/cart',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreAboutRoute = StoreAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
   getParentRoute: () => StoreRoute,
 } as any)
 const AdminProductsIndexRoute = AdminProductsIndexRouteImport.update({
@@ -125,26 +93,11 @@ const AdminProductsIdRoute = AdminProductsIdRouteImport.update({
   path: '/products/$id',
   getParentRoute: () => AdminRoute,
 } as any)
-const StoreProductIdRoute = StoreProductIdRouteImport.update({
-  id: '/product/$id',
-  path: '/product/$id',
-  getParentRoute: () => StoreRoute,
-} as any)
-const StoreCategorySlugRoute = StoreCategorySlugRouteImport.update({
-  id: '/category/$slug',
-  path: '/category/$slug',
-  getParentRoute: () => StoreRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof StoreIndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/about': typeof StoreAboutRoute
-  '/cart': typeof StoreCartRoute
-  '/contact': typeof StoreContactRoute
   '/login': typeof StoreLoginRoute
-  '/register': typeof StoreRegisterRoute
-  '/shop': typeof StoreShopRoute
   '/admin/analystic': typeof AdminAnalysticRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/gallery': typeof AdminGalleryRoute
@@ -152,19 +105,12 @@ export interface FileRoutesByFullPath {
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
-  '/category/$slug': typeof StoreCategorySlugRoute
-  '/product/$id': typeof StoreProductIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
   '/admin/products/': typeof AdminProductsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/about': typeof StoreAboutRoute
-  '/cart': typeof StoreCartRoute
-  '/contact': typeof StoreContactRoute
   '/login': typeof StoreLoginRoute
-  '/register': typeof StoreRegisterRoute
-  '/shop': typeof StoreShopRoute
   '/admin/analystic': typeof AdminAnalysticRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/gallery': typeof AdminGalleryRoute
@@ -173,8 +119,6 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/': typeof StoreIndexRoute
   '/admin': typeof AdminIndexRoute
-  '/category/$slug': typeof StoreCategorySlugRoute
-  '/product/$id': typeof StoreProductIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
   '/admin/products': typeof AdminProductsIndexRoute
@@ -183,12 +127,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_store': typeof StoreRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
-  '/_store/about': typeof StoreAboutRoute
-  '/_store/cart': typeof StoreCartRoute
-  '/_store/contact': typeof StoreContactRoute
   '/_store/login': typeof StoreLoginRoute
-  '/_store/register': typeof StoreRegisterRoute
-  '/_store/shop': typeof StoreShopRoute
   '/admin/analystic': typeof AdminAnalysticRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/gallery': typeof AdminGalleryRoute
@@ -197,8 +136,6 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/_store/': typeof StoreIndexRoute
   '/admin/': typeof AdminIndexRoute
-  '/_store/category/$slug': typeof StoreCategorySlugRoute
-  '/_store/product/$id': typeof StoreProductIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
   '/admin/products/': typeof AdminProductsIndexRoute
@@ -208,12 +145,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/about'
-    | '/cart'
-    | '/contact'
     | '/login'
-    | '/register'
-    | '/shop'
     | '/admin/analystic'
     | '/admin/customers'
     | '/admin/gallery'
@@ -221,19 +153,12 @@ export interface FileRouteTypes {
     | '/admin/reviews'
     | '/admin/settings'
     | '/admin/'
-    | '/category/$slug'
-    | '/product/$id'
     | '/admin/products/$id'
     | '/admin/products/new'
     | '/admin/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/about'
-    | '/cart'
-    | '/contact'
     | '/login'
-    | '/register'
-    | '/shop'
     | '/admin/analystic'
     | '/admin/customers'
     | '/admin/gallery'
@@ -242,8 +167,6 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/'
     | '/admin'
-    | '/category/$slug'
-    | '/product/$id'
     | '/admin/products/$id'
     | '/admin/products/new'
     | '/admin/products'
@@ -251,12 +174,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_store'
     | '/admin'
-    | '/_store/about'
-    | '/_store/cart'
-    | '/_store/contact'
     | '/_store/login'
-    | '/_store/register'
-    | '/_store/shop'
     | '/admin/analystic'
     | '/admin/customers'
     | '/admin/gallery'
@@ -265,8 +183,6 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/_store/'
     | '/admin/'
-    | '/_store/category/$slug'
-    | '/_store/product/$id'
     | '/admin/products/$id'
     | '/admin/products/new'
     | '/admin/products/'
@@ -349,46 +265,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnalysticRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_store/shop': {
-      id: '/_store/shop'
-      path: '/shop'
-      fullPath: '/shop'
-      preLoaderRoute: typeof StoreShopRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/_store/register': {
-      id: '/_store/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof StoreRegisterRouteImport
-      parentRoute: typeof StoreRoute
-    }
     '/_store/login': {
       id: '/_store/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof StoreLoginRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/_store/contact': {
-      id: '/_store/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof StoreContactRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/_store/cart': {
-      id: '/_store/cart'
-      path: '/cart'
-      fullPath: '/cart'
-      preLoaderRoute: typeof StoreCartRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/_store/about': {
-      id: '/_store/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof StoreAboutRouteImport
       parentRoute: typeof StoreRoute
     }
     '/admin/products/': {
@@ -412,45 +293,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProductsIdRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_store/product/$id': {
-      id: '/_store/product/$id'
-      path: '/product/$id'
-      fullPath: '/product/$id'
-      preLoaderRoute: typeof StoreProductIdRouteImport
-      parentRoute: typeof StoreRoute
-    }
-    '/_store/category/$slug': {
-      id: '/_store/category/$slug'
-      path: '/category/$slug'
-      fullPath: '/category/$slug'
-      preLoaderRoute: typeof StoreCategorySlugRouteImport
-      parentRoute: typeof StoreRoute
-    }
   }
 }
 
 interface StoreRouteChildren {
-  StoreAboutRoute: typeof StoreAboutRoute
-  StoreCartRoute: typeof StoreCartRoute
-  StoreContactRoute: typeof StoreContactRoute
   StoreLoginRoute: typeof StoreLoginRoute
-  StoreRegisterRoute: typeof StoreRegisterRoute
-  StoreShopRoute: typeof StoreShopRoute
   StoreIndexRoute: typeof StoreIndexRoute
-  StoreCategorySlugRoute: typeof StoreCategorySlugRoute
-  StoreProductIdRoute: typeof StoreProductIdRoute
 }
 
 const StoreRouteChildren: StoreRouteChildren = {
-  StoreAboutRoute: StoreAboutRoute,
-  StoreCartRoute: StoreCartRoute,
-  StoreContactRoute: StoreContactRoute,
   StoreLoginRoute: StoreLoginRoute,
-  StoreRegisterRoute: StoreRegisterRoute,
-  StoreShopRoute: StoreShopRoute,
   StoreIndexRoute: StoreIndexRoute,
-  StoreCategorySlugRoute: StoreCategorySlugRoute,
-  StoreProductIdRoute: StoreProductIdRoute,
 }
 
 const StoreRouteWithChildren = StoreRoute._addFileChildren(StoreRouteChildren)

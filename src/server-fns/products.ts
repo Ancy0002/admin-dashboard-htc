@@ -32,19 +32,55 @@ async function withPersistedImages(
   return { ...data, image, gallery, brandImage };
 }
 
-/** Upload a product image data-URL to public storage; returns a shareable URL. */
-export const uploadAdminProductImage = createServerFn({ method: "POST" })
-  .validator((data: { dataUrl: string }) => {
-    const dataUrl = data?.dataUrl?.trim() ?? "";
-    if (!dataUrl.startsWith("data:")) throw new Error("Invalid image data.");
-    if (dataUrl.length > 6_000_000) throw new Error("Image is too large.");
-    return { dataUrl };
-  })
-  .handler(async ({ data }) => {
-    await assertAdmin();
-    const url = await uploadProductImageDataUrl(data.dataUrl);
-    return { url };
-  });
+function normalizeProduct(data: ValidatedCreateProductInput): ValidatedCreateProductInput {
+  if (data.sizes.length === 0) {
+    throw new Error("Add at least one size with a price.");
+  }
+
+  const basePrice = data.sizes[0]?.price ?? 0;
+  let quantityVariants = data.quantityVariants.filter((qv) => qv.quantity >= 1);
+
+  if (quantityVariants.length === 0) {
+    quantityVariants = [
+      {
+        quantity: 1,
+        pricePerUnit: basePrice,
+        savingsPercent: null,
+        savedAmount: null,
+      },
+    ];
+  } else {
+    quantityVariants = quantityVariants.map((qv) => ({
+      ...qv,
+      pricePerUnit: qv.pricePerUnit > 0 ? qv.pricePerUnit : basePrice,
+    }));
+  }
+
+  const image = data.image.trim();
+  if (
+    data.isListed &&
+    (!image || image.includes("placehold.co") || image.startsWith("data:") || image.startsWith("blob:"))
+  ) {
+    throw new Error("Upload a product image before listing on the website.");
+  }
+
+  return {
+    ...data,
+    image,
+    weight: data.weight ?? "",
+    excerpt: data.excerpt ?? "",
+    brandName: data.brandName ?? "",
+    brandImage: data.brandImage ?? "",
+    dispatchTime: data.dispatchTime ?? "",
+    note: data.note ?? "",
+    dispatchmentDetails: data.dispatchmentDetails ?? "",
+    returnableInfo: data.returnableInfo ?? "",
+    keyIngredients: data.keyIngredients?.trim() || "N/A",
+    skinType: data.skinType?.trim() || "All types",
+    benefit: data.benefit?.trim() || "N/A",
+    quantityVariants,
+  };
+}
 
 function productScalars(data: ValidatedCreateProductInput) {
   return {
@@ -52,25 +88,25 @@ function productScalars(data: ValidatedCreateProductInput) {
     category: data.category,
     description: data.description,
     image: data.image,
-    weight: data.weight || null,
+    weight: data.weight || "",
     gallery: data.gallery,
     keyIngredients: data.keyIngredients,
     skinType: data.skinType,
     benefit: data.benefit,
     additionalInfo:
       Object.keys(data.additionalInfo).length > 0 ? data.additionalInfo : undefined,
-    note: data.note || null,
-    dispatchmentDetails: data.dispatchmentDetails || null,
-    returnableInfo: data.returnableInfo || null,
+    note: data.note || "",
+    dispatchmentDetails: data.dispatchmentDetails || "",
+    returnableInfo: data.returnableInfo || "",
     features: data.features,
     isBestSeller: data.isBestSeller,
     isListed: data.isListed,
     salesCount: data.salesCount,
-    excerpt: data.excerpt || null,
+    excerpt: data.excerpt || "",
     totalRating: data.totalRating,
-    brandName: data.brandName || null,
-    brandImage: data.brandImage || null,
-    dispatchTime: data.dispatchTime || null,
+    brandName: data.brandName || "",
+    brandImage: data.brandImage || "",
+    dispatchTime: data.dispatchTime || "",
     isReturnable: data.isReturnable,
     stockStatus: data.stockStatus,
   };
@@ -100,34 +136,145 @@ function productRelations(data: ValidatedCreateProductInput) {
   };
 }
 
+function mapListItem(p: {
+  id: string;
+  name: string;
+  category: string;
+  image: string;
+  stockStatus: string;
+  salesCount: number;
+  isListed: boolean;
+  isBestSeller: boolean;
+  sizes: { price: number }[];
+}) {
+  const prices = p.sizes.map((s) => s.price);
+  const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+  const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+
+  return {
+    id: p.id,
+    shortId: productShortId(p.id),
+    name: p.name,
+    category: p.category,
+    priceRange: formatPriceRange(minPrice, maxPrice),
+    minPrice,
+    maxPrice,
+    stockStatus: p.stockStatus,
+    visibility: p.isListed ? "Listed" : "Hidden",
+    image: sanitizeImageUrl(p.image),
+    salesCount: p.salesCount,
+    isListed: p.isListed,
+    isBestSeller: p.isBestSeller,
+    hasSizes: p.sizes.length > 0,
+  };
+}
+
+function mapProductDetail(product: {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  keyIngredients: string;
+  skinType: string;
+  benefit: string;
+  weight: string | null;
+  image: string;
+  gallery: string[];
+  isBestSeller: boolean;
+  isListed: boolean;
+  salesCount: number;
+  excerpt: string | null;
+  totalRating: number;
+  brandName: string | null;
+  brandImage: string | null;
+  stockStatus: string;
+  dispatchTime: string | null;
+  isReturnable: boolean;
+  additionalInfo: unknown;
+  note: string | null;
+  dispatchmentDetails: string | null;
+  returnableInfo: string | null;
+  features: string[];
+  sizes: { id: string; size: string; price: number }[];
+  quantityVariants: {
+    id: string;
+    quantity: number;
+    pricePerUnit: number;
+    savingsPercent: number | null;
+    savedAmount: number | null;
+  }[];
+  reviews: { id: string; userName: string; rating: number; comment: string }[];
+}) {
+  const additionalInfo =
+    product.additionalInfo &&
+    typeof product.additionalInfo === "object" &&
+    !Array.isArray(product.additionalInfo)
+      ? (product.additionalInfo as Record<string, string>)
+      : {};
+
+  return {
+    id: product.id,
+    name: product.name,
+    category: product.category,
+    description: product.description,
+    keyIngredients: product.keyIngredients,
+    skinType: product.skinType,
+    benefit: product.benefit,
+    weight: product.weight ?? "",
+    image: sanitizeImageUrl(product.image),
+    gallery: product.gallery.map(sanitizeImageUrl),
+    isBestSeller: product.isBestSeller,
+    isListed: product.isListed,
+    salesCount: product.salesCount,
+    excerpt: product.excerpt ?? "",
+    totalRating: product.totalRating,
+    brandName: product.brandName ?? "",
+    brandImage: product.brandImage ?? "",
+    stockStatus: product.stockStatus,
+    dispatchTime: product.dispatchTime ?? "",
+    isReturnable: product.isReturnable,
+    sizes: product.sizes.map((s) => ({ id: s.id, size: s.size, price: s.price })),
+    quantityVariants: product.quantityVariants.map((qv) => ({
+      id: qv.id,
+      quantity: qv.quantity,
+      pricePerUnit: qv.pricePerUnit,
+      savingsPercent: qv.savingsPercent,
+      savedAmount: qv.savedAmount,
+    })),
+    features: product.features,
+    additionalInfo,
+    note: product.note ?? "",
+    dispatchmentDetails: product.dispatchmentDetails ?? "",
+    returnableInfo: product.returnableInfo ?? "",
+    reviews: product.reviews.map((r) => ({
+      id: r.id,
+      userName: r.userName,
+      rating: r.rating,
+      comment: r.comment,
+    })),
+  };
+}
+
+export const uploadAdminProductImage = createServerFn({ method: "POST" })
+  .validator((data: { dataUrl: string }) => {
+    const dataUrl = data?.dataUrl?.trim() ?? "";
+    if (!dataUrl.startsWith("data:")) throw new Error("Invalid image data.");
+    if (dataUrl.length > 6_000_000) throw new Error("Image is too large.");
+    return { dataUrl };
+  })
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const url = await uploadProductImageDataUrl(data.dataUrl);
+    return { url };
+  });
+
 export const getAdminProducts = createServerFn({ method: "GET" }).handler(async () => {
   await assertAdmin();
   const products = await prisma.product.findMany({
     include: { sizes: true },
     orderBy: { createdAt: "desc" },
   });
-
-  return products.map((p) => {
-    const prices = p.sizes.map((s) => s.price);
-    const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
-    const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
-
-    return {
-      id: p.id,
-      shortId: productShortId(p.id),
-      name: p.name,
-      category: p.category,
-      priceRange: formatPriceRange(minPrice, maxPrice),
-      minPrice,
-      maxPrice,
-      stockStatus: p.stockStatus,
-      visibility: p.isListed ? "Listed" : "Hidden",
-      image: sanitizeImageUrl(p.image),
-      salesCount: p.salesCount,
-      isListed: p.isListed,
-      isBestSeller: p.isBestSeller,
-    };
-  });
+  return products.map(mapListItem);
 });
 
 export const getAdminProductStats = createServerFn({ method: "GET" }).handler(async () => {
@@ -137,7 +284,6 @@ export const getAdminProductStats = createServerFn({ method: "GET" }).handler(as
     prisma.product.count({ where: { isListed: true, stockStatus: "IN_STOCK" } }),
     prisma.product.count({ where: { stockStatus: { not: "IN_STOCK" } } }),
   ]);
-
   return { total, active, outOfStock };
 });
 
@@ -156,57 +302,8 @@ export const getAdminProductById = createServerFn({ method: "GET" })
         reviews: { orderBy: { createdAt: "asc" } },
       },
     });
-
     if (!product) return null;
-
-    const additionalInfo =
-      product.additionalInfo &&
-      typeof product.additionalInfo === "object" &&
-      !Array.isArray(product.additionalInfo)
-        ? (product.additionalInfo as Record<string, string>)
-        : {};
-
-    return {
-      id: product.id,
-      name: product.name,
-      category: product.category,
-      description: product.description,
-      keyIngredients: product.keyIngredients,
-      skinType: product.skinType,
-      benefit: product.benefit,
-      weight: product.weight ?? "",
-      image: sanitizeImageUrl(product.image),
-      gallery: product.gallery.map(sanitizeImageUrl),
-      isBestSeller: product.isBestSeller,
-      isListed: product.isListed,
-      salesCount: product.salesCount,
-      excerpt: product.excerpt ?? "",
-      totalRating: product.totalRating,
-      brandName: product.brandName ?? "",
-      brandImage: product.brandImage ?? "",
-      stockStatus: product.stockStatus,
-      dispatchTime: product.dispatchTime ?? "",
-      isReturnable: product.isReturnable,
-      sizes: product.sizes.map((s) => ({ id: s.id, size: s.size, price: s.price })),
-      quantityVariants: product.quantityVariants.map((qv) => ({
-        id: qv.id,
-        quantity: qv.quantity,
-        pricePerUnit: qv.pricePerUnit,
-        savingsPercent: qv.savingsPercent,
-        savedAmount: qv.savedAmount,
-      })),
-      features: product.features,
-      additionalInfo,
-      note: product.note ?? "",
-      dispatchmentDetails: product.dispatchmentDetails ?? "",
-      returnableInfo: product.returnableInfo ?? "",
-      reviews: product.reviews.map((r) => ({
-        id: r.id,
-        userName: r.userName,
-        rating: r.rating,
-        comment: r.comment,
-      })),
-    };
+    return mapProductDetail(product);
   });
 
 async function replaceProductRelations(productId: string, data: ValidatedCreateProductInput) {
@@ -228,15 +325,17 @@ export const updateAdminProduct = createServerFn({ method: "POST" })
   .validator((data: unknown) => updateProductSchema.parse(data))
   .handler(async ({ data }) => {
     await assertAdmin();
-    const existing = await prisma.product.findUnique({ where: { id: data.id } });
-    if (!existing) throw new Error("Product not found");
-
     const { id, ...input } = data;
-    const persisted = await withPersistedImages(input);
-    await replaceProductRelations(id, persisted);
+    const normalized = normalizeProduct(await withPersistedImages(input));
+    const existing = await prisma.product.findUnique({
+      where: { id },
+      select: { image: true, gallery: true, brandImage: true },
+    });
+    if (!existing) throw new Error("Product not found");
+    await replaceProductRelations(id, normalized);
 
     const nextUrls = new Set(
-      [persisted.image, ...persisted.gallery, persisted.brandImage].filter(Boolean),
+      [normalized.image, ...normalized.gallery, normalized.brandImage].filter(Boolean),
     );
     const removed = [existing.image, ...existing.gallery, existing.brandImage].filter(
       (url): url is string => Boolean(url) && !nextUrls.has(url),
@@ -250,14 +349,13 @@ export const createAdminProduct = createServerFn({ method: "POST" })
   .validator((data: unknown) => createProductSchema.parse(data))
   .handler(async ({ data }) => {
     await assertAdmin();
-    const persisted = await withPersistedImages(data);
+    const normalized = normalizeProduct(await withPersistedImages(data));
     const product = await prisma.product.create({
       data: {
-        ...productScalars(persisted),
-        ...productRelations(persisted),
+        ...productScalars(normalized),
+        ...productRelations(normalized),
       },
     });
-
     return { id: product.id };
   });
 

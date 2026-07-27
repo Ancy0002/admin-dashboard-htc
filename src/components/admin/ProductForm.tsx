@@ -115,7 +115,7 @@ function buildPayload(state: {
     skinType: state.skinType.trim() || "All types",
     benefit: state.benefit.trim() || "N/A",
     weight: state.weight.trim(),
-    image: state.image.trim() || "https://placehold.co/600x600?text=Product",
+    image: state.image.trim(),
     gallery: state.gallery.filter(Boolean),
     isBestSeller: state.isBestSeller,
     isListed: state.isListed,
@@ -157,7 +157,7 @@ function initSizes(data?: ProductFormInitialData): SizeRow[] {
   if (data?.sizes.length) {
     return data.sizes.map((s) => ({ size: s.size, price: String(s.price) }));
   }
-  return [];
+  return [{ size: "", price: "" }];
 }
 
 function initQuantityTiers(data?: ProductFormInitialData): QuantityTierRow[] {
@@ -309,6 +309,43 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
       toast.error("Product title and description are required.");
       return;
     }
+
+    if (payload.sizes.length === 0) {
+      toast.error("Add at least one size with a price — required for hatikvahcare.com.");
+      return;
+    }
+
+    if (!payload.image.trim()) {
+      toast.error("Upload a product image.");
+      return;
+    }
+
+    if (
+      payload.isListed &&
+      (payload.image.includes("placehold.co") ||
+        payload.image.startsWith("data:") ||
+        payload.image.startsWith("blob:"))
+    ) {
+      toast.error("Upload a real product image before listing on hatikvahcare.com.");
+      return;
+    }
+
+    // Keep quantity tiers priced — live site expects usable pricePerUnit values.
+    const basePrice = payload.sizes[0]?.price ?? 0;
+    payload.quantityVariants = (payload.quantityVariants.length
+      ? payload.quantityVariants
+      : [
+          {
+            quantity: 1,
+            pricePerUnit: basePrice,
+            savedAmount: null,
+            savingsPercent: null,
+          },
+        ]
+    ).map((qv) => ({
+      ...qv,
+      pricePerUnit: qv.pricePerUnit > 0 ? qv.pricePerUnit : basePrice,
+    }));
 
     setSaving(true);
     try {
@@ -657,6 +694,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
 
         <CardSection
           title="Sizes & Pricing"
+          subtitle="Required — hatikvahcare.com will not show products without at least one size and price."
           action={
             <button
               type="button"
@@ -668,9 +706,6 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
             </button>
           }
         >
-          {sizes.length === 0 ? (
-            <p className="text-sm italic text-muted-foreground">No sizes added yet.</p>
-          ) : null}
           <div className="space-y-3">
             {sizes.map((row, i) => (
               <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
