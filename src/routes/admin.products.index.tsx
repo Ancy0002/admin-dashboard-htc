@@ -12,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { STORE_URL } from "@/lib/store-url";
+import { STORE_URL, storeProductUrl, storeShopUrl } from "@/lib/store-url";
 import {
   deleteAdminProduct,
   getAdminProductStats,
@@ -77,6 +77,27 @@ function AdminProducts() {
     } finally {
       setTogglingId(null);
     }
+  };
+
+  const openLiveProduct = (product: (typeof products)[number]) => {
+    if (!product.isListed) {
+      toast.error("Product is hidden. Switch it to LISTED before viewing on the website.");
+      return;
+    }
+    if (!product.hasSizes) {
+      toast.error(
+        "Add at least one size/price in Edit — the live site needs it to show the product.",
+      );
+      return;
+    }
+
+    const productUrl = storeProductUrl(product.id);
+    const shopUrl = storeShopUrl(product.category);
+    window.open(productUrl, "_blank", "noopener,noreferrer");
+    toast.message("Opened live product page", {
+      description: `Product: ${productUrl} · Also in Shop: ${shopUrl}`,
+      duration: 8_000,
+    });
   };
 
   const handleExport = () => {
@@ -202,6 +223,21 @@ function AdminProducts() {
                           <div className="text-xs text-muted-foreground uppercase">
                             {product.shortId}
                           </div>
+                          {product.isListed ? (
+                            <a
+                              href={storeProductUrl(product.id)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1 block truncate text-[11px] text-primary hover:underline"
+                              title={storeProductUrl(product.id)}
+                            >
+                              {storeProductUrl(product.id)}
+                            </a>
+                          ) : (
+                            <div className="mt-1 text-[11px] text-muted-foreground">
+                              Hidden — not on website
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -236,27 +272,9 @@ function AdminProducts() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            if (!product.isListed) {
-                              toast.error(
-                                "Product is hidden. Switch it to LISTED before viewing on the website.",
-                              );
-                              return;
-                            }
-                            if (!product.hasSizes) {
-                              toast.error(
-                                "Add at least one size/price in Edit — the live site needs it to show the product.",
-                              );
-                              return;
-                            }
-                            window.open(
-                              `${STORE_URL}/product/${product.id}`,
-                              "_blank",
-                              "noopener,noreferrer",
-                            );
-                          }}
+                          onClick={() => openLiveProduct(product)}
                           className="rounded-md p-2 hover:bg-accent"
-                          title="View on website"
+                          title={`View product: ${storeProductUrl(product.id)}`}
                         >
                           <Globe className="h-4 w-4" aria-hidden="true" />
                         </button>

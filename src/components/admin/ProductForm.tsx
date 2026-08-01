@@ -5,7 +5,7 @@ import { Image, Plus, Save, Trash2, TrendingUp, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { INPUT_CLASS, LABEL_CLASS } from "@/lib/admin-form-styles";
 import { readFileAsDataUrl } from "@/lib/file-utils";
-import { STORE_URL } from "@/lib/store-url";
+import { storeProductUrl } from "@/lib/store-url";
 import {
   createAdminProduct,
   updateAdminProduct,
@@ -348,17 +348,20 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
 
       // Warn early if the live site cannot see this row (usually DATABASE_URL mismatch on Linux).
       if (payload.isListed && savedId) {
+        const liveUrl = storeProductUrl(savedId);
         try {
-          const live = await fetch(`${STORE_URL}/product/${savedId}`, { method: "GET" });
+          const live = await fetch(liveUrl, { method: "GET" });
           const html = await live.text();
           if (/Product Not Found/i.test(html)) {
             toast.error(
-              "Saved in admin DB, but hatikvahcare.com cannot see it yet. On the Linux main app, set the same DATABASE_URL as this admin .env and restart.",
+              `Saved in admin, but live page is missing: ${liveUrl}. On the Linux main app, use the same DATABASE_URL and restart with --update-env.`,
               { duration: 12_000 },
             );
+          } else {
+            toast.success(`Live product link: ${liveUrl}`);
           }
         } catch {
-          // Ignore network failures — save itself succeeded.
+          toast.message(`Live product link: ${liveUrl}`);
         }
       }
 
