@@ -5,6 +5,7 @@ import { Image, Plus, Save, Trash2, TrendingUp, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { INPUT_CLASS, LABEL_CLASS } from "@/lib/admin-form-styles";
 import { readFileAsDataUrl } from "@/lib/file-utils";
+import { STORE_URL } from "@/lib/store-url";
 import {
   createAdminProduct,
   updateAdminProduct,
@@ -334,13 +335,33 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
 
     setSaving(true);
     try {
+      let savedId = initialData?.id ?? "";
       if (mode === "edit" && initialData) {
-        await updateProduct({ data: { ...payload, id: initialData.id } });
+        const result = await updateProduct({ data: { ...payload, id: initialData.id } });
+        savedId = result.id;
         toast.success("Product updated");
       } else {
-        await createProduct({ data: payload });
+        const result = await createProduct({ data: payload });
+        savedId = result.id;
         toast.success("Product created");
       }
+
+      // Warn early if the live site cannot see this row (usually DATABASE_URL mismatch on Linux).
+      if (payload.isListed && savedId) {
+        try {
+          const live = await fetch(`${STORE_URL}/product/${savedId}`, { method: "GET" });
+          const html = await live.text();
+          if (/Product Not Found/i.test(html)) {
+            toast.error(
+              "Saved in admin DB, but hatikvahcare.com cannot see it yet. On the Linux main app, set the same DATABASE_URL as this admin .env and restart.",
+              { duration: 12_000 },
+            );
+          }
+        } catch {
+          // Ignore network failures — save itself succeeded.
+        }
+      }
+
       await router.navigate({ to: "/admin/products" });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to save product.");

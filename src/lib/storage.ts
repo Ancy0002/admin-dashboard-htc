@@ -20,23 +20,40 @@ function getS3Client() {
   });
 }
 
+/** Must match main app `product.ts` sanitizeUrl (bucket + project hardcoding). */
+const LIVE_STORAGE_PROJECT_ID = "tdonwvbgqyyfkatrdxsx";
+const LIVE_STORAGE_BUCKET = "Products";
+
 function getBucketName() {
-  return process.env.S3_BUCKET_NAME?.trim() || "Products";
+  // Main website always reads from the "Products" bucket.
+  return LIVE_STORAGE_BUCKET;
 }
 
 function getPublicObjectUrl(key: string) {
-  const endpoint = process.env.S3_ENDPOINT || "";
-  const bucket = getBucketName();
-  if (!endpoint) {
-    throw new Error("S3_ENDPOINT is not configured.");
+  const normalizedKey = key.replace(/^\//, "");
+  // Exact public URL shape expected by hatikvahcare.com product.ts:
+  // https://tdonwvbgqyyfkatrdxsx.storage.supabase.co/storage/v1/object/public/Products/uploads/...
+  return `https://${LIVE_STORAGE_PROJECT_ID}.storage.supabase.co/storage/v1/object/public/${LIVE_STORAGE_BUCKET}/${normalizedKey}`;
+}
+
+/** Normalize any stored image value into the live-site URL shape when possible. */
+export function toLiveProductImageUrl(url: string) {
+  const trimmed = (url || "").trim();
+  if (!trimmed) return trimmed;
+
+  if (
+    trimmed.includes(`${LIVE_STORAGE_PROJECT_ID}.storage.supabase.co`) &&
+    !trimmed.includes("@")
+  ) {
+    return trimmed;
   }
 
-  const match = endpoint.match(/https:\/\/([^.]+)\.storage\.supabase\.co/);
+  const match = trimmed.match(/uploads\/(.*)$/);
   if (match) {
-    return `https://${match[1]}.supabase.co/storage/v1/object/public/${bucket}/${key}`;
+    return getPublicObjectUrl(`uploads/${match[1]}`);
   }
 
-  return `${endpoint.replace(/\/$/, "")}/${bucket}/${key}`;
+  return trimmed;
 }
 
 function parseDataUrl(dataUrl: string) {

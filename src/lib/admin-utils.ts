@@ -1,26 +1,10 @@
-/** Normalize stored image paths to public URLs. */
+import { toLiveProductImageUrl } from "@/lib/storage";
+
+/** Normalize stored image paths to public URLs used by hatikvahcare.com. */
 export function sanitizeImageUrl(url: string) {
   if (!url) return url;
-  if (
-    url.startsWith("http://") ||
-    url.startsWith("https://") ||
-    url.startsWith("data:") ||
-    url.startsWith("blob:")
-  ) {
-    return url;
-  }
-
-  const endpoint = process.env.S3_ENDPOINT || "";
-  const bucket = process.env.S3_BUCKET_NAME?.trim() || "Products";
-  if (!endpoint || !bucket) return url;
-
-  const key = url.replace(/^\//, "");
-  const supabaseMatch = endpoint.match(/https:\/\/([^.]+)\.storage\.supabase\.co/);
-  if (supabaseMatch) {
-    return `https://${supabaseMatch[1]}.supabase.co/storage/v1/object/public/${bucket}/${key}`;
-  }
-
-  return `${endpoint.replace(/\/$/, "")}/${bucket}/${key}`;
+  if (url.startsWith("data:") || url.startsWith("blob:")) return url;
+  return toLiveProductImageUrl(url);
 }
 
 export function formatCurrency(amount: number) {

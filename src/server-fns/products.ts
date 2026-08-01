@@ -9,14 +9,17 @@ import {
 import {
   deleteProductImageFiles,
   persistProductImage,
+  toLiveProductImageUrl,
   uploadProductImageDataUrl,
 } from "@/lib/storage";
 import { requireAdminSessionData } from "@/lib/admin-session";
 
-/** Public placeholder on the live store — no S3 upload required. */
-const DEFAULT_STORE_PRODUCT_IMAGE = `${
-  process.env.VITE_STORE_URL?.replace(/\/$/, "") || "https://hatikvahcare.com"
-}/images/product.png`;
+/**
+ * Fallback image in the exact public URL shape expected by
+ * hatikvah-care-fntd/src/app/actions/product.ts sanitizeUrl.
+ */
+const DEFAULT_STORE_PRODUCT_IMAGE =
+  "https://tdonwvbgqyyfkatrdxsx.storage.supabase.co/storage/v1/object/public/Products/uploads/placeholder-product.png";
 
 function isUsableImageUrl(image: string) {
   const value = image.trim();
@@ -27,7 +30,8 @@ function isUsableImageUrl(image: string) {
 }
 
 function resolveProductImage(image: string) {
-  return isUsableImageUrl(image) ? image.trim() : DEFAULT_STORE_PRODUCT_IMAGE;
+  if (!isUsableImageUrl(image)) return DEFAULT_STORE_PRODUCT_IMAGE;
+  return toLiveProductImageUrl(image.trim()) || DEFAULT_STORE_PRODUCT_IMAGE;
 }
 
 async function assertAdmin() {
@@ -57,7 +61,8 @@ async function withPersistedImages(
     Promise.all(
       data.gallery.map(async (url) => {
         try {
-          return await persistProductImage(url);
+          const persisted = await persistProductImage(url);
+          return toLiveProductImageUrl(persisted);
         } catch {
           return "";
         }
@@ -65,10 +70,15 @@ async function withPersistedImages(
     ).then((urls) => urls.filter(Boolean)),
     data.brandImage?.trim()
       ? persistImageOrDefault(data.brandImage).catch(() => "")
-      : Promise.resolve(data.brandImage),
+      : Promise.resolve(""),
   ]);
 
-  return { ...data, image, gallery, brandImage };
+  return {
+    ...data,
+    image: toLiveProductImageUrl(image) || image,
+    gallery,
+    brandImage: brandImage ? toLiveProductImageUrl(brandImage) : "",
+  };
 }
 
 function normalizeProduct(data: ValidatedCreateProductInput): ValidatedCreateProductInput {
