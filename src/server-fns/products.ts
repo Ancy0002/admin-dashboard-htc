@@ -9,23 +9,62 @@ import {
 import {
   deleteProductImageFiles,
   persistProductImage,
-  persistProductImages,
   uploadProductImageDataUrl,
 } from "@/lib/storage";
 import { requireAdminSessionData } from "@/lib/admin-session";
 
+/** Public placeholder on the live store — no S3 upload required. */
+const DEFAULT_STORE_PRODUCT_IMAGE = `${
+  process.env.VITE_STORE_URL?.replace(/\/$/, "") || "https://hatikvahcare.com"
+}/images/product.png`;
+
+function isUsableImageUrl(image: string) {
+  const value = image.trim();
+  if (!value) return false;
+  if (value.includes("placehold.co")) return false;
+  if (value.startsWith("data:") || value.startsWith("blob:")) return false;
+  return true;
+}
+
+function resolveProductImage(image: string) {
+  return isUsableImageUrl(image) ? image.trim() : DEFAULT_STORE_PRODUCT_IMAGE;
+}
+
 async function assertAdmin() {
   await requireAdminSessionData();
+}
+
+async function persistImageOrDefault(value: string) {
+  const trimmed = value.trim();
+  if (!isUsableImageUrl(trimmed) && !trimmed.startsWith("data:")) {
+    return DEFAULT_STORE_PRODUCT_IMAGE;
+  }
+
+  try {
+    const persisted = await persistProductImage(trimmed);
+    return resolveProductImage(persisted);
+  } catch {
+    // S3 optional — still save the product so it can appear on hatikvahcare.com
+    return DEFAULT_STORE_PRODUCT_IMAGE;
+  }
 }
 
 async function withPersistedImages(
   data: ValidatedCreateProductInput,
 ): Promise<ValidatedCreateProductInput> {
   const [image, gallery, brandImage] = await Promise.all([
-    persistProductImage(data.image),
-    persistProductImages(data.gallery),
+    persistImageOrDefault(data.image),
+    Promise.all(
+      data.gallery.map(async (url) => {
+        try {
+          return await persistProductImage(url);
+        } catch {
+          return "";
+        }
+      }),
+    ).then((urls) => urls.filter(Boolean)),
     data.brandImage?.trim()
-      ? persistProductImage(data.brandImage)
+      ? persistImageOrDefault(data.brandImage).catch(() => "")
       : Promise.resolve(data.brandImage),
   ]);
 
@@ -56,15 +95,7 @@ function normalizeProduct(data: ValidatedCreateProductInput): ValidatedCreatePro
     }));
   }
 
-  const image = data.image.trim();
-  if (
-    data.isListed &&
-    (!image || image.includes("placehold.co") || image.startsWith("data:") || image.startsWith("blob:"))
-  ) {
-    throw new Error(
-      "Upload a real product image before listing on the website. You can save as Hidden without an image.",
-    );
-  }
+  const image = resolveProductImage(data.image);
 
   return {
     ...data,

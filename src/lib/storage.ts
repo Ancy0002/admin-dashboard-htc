@@ -60,15 +60,34 @@ export async function uploadProductImageDataUrl(dataUrl: string, folder = "uploa
   const { contentType, buffer } = parseDataUrl(dataUrl);
   const ext = extensionForContentType(contentType);
   const key = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+  const bucket = getBucketName();
 
-  await getS3Client().send(
-    new PutObjectCommand({
-      Bucket: getBucketName(),
-      Key: key,
-      Body: buffer,
-      ContentType: contentType,
-    }),
-  );
+  try {
+    await getS3Client().send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+      }),
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const code =
+      error && typeof error === "object" && "name" in error
+        ? String((error as { name?: string }).name)
+        : "";
+    if (
+      code === "NoSuchBucket" ||
+      /bucket.*(not found|does not exist)/i.test(message) ||
+      /NoSuchBucket/i.test(message)
+    ) {
+      throw new Error(
+        `Storage bucket "${bucket}" was not found. In Supabase → Storage create a public bucket named exactly "${bucket}" (case-sensitive), set S3_BUCKET_NAME to that same name, then restart the app.`,
+      );
+    }
+    throw error instanceof Error ? error : new Error(message);
+  }
 
   return getPublicObjectUrl(key);
 }

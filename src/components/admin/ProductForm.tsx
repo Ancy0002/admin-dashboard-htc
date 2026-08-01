@@ -315,19 +315,6 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
       return;
     }
 
-    if (
-      payload.isListed &&
-      (!payload.image.trim() ||
-        payload.image.includes("placehold.co") ||
-        payload.image.startsWith("data:") ||
-        payload.image.startsWith("blob:"))
-    ) {
-      toast.error(
-        "Upload a product image before listing, or turn off “Show on website” to save as a draft.",
-      );
-      return;
-    }
-
     // Keep quantity tiers priced — live site expects usable pricePerUnit values.
     const basePrice = payload.sizes[0]?.price ?? 0;
     payload.quantityVariants = (payload.quantityVariants.length
@@ -416,7 +403,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
                       {uploadingImage ? "Uploading..." : "Click to upload"}
                     </div>
                     <div className="text-center text-xs text-muted-foreground">
-                      Required to list on hatikvahcare.com — optional for Hidden drafts
+                      Optional — without an upload, a default store image is used
                       <br />
                       High resolution PNG or JPG (Recommended: 1000×1000px)
                     </div>
