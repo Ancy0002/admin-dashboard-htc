@@ -11,7 +11,7 @@ export function sanitizeImageUrl(url: string) {
   }
 
   const endpoint = process.env.S3_ENDPOINT || "";
-  const bucket = process.env.S3_BUCKET_NAME || "products";
+  const bucket = process.env.S3_BUCKET_NAME?.trim() || "Products";
   if (!endpoint || !bucket) return url;
 
   const key = url.replace(/^\//, "");

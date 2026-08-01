@@ -1,13 +1,14 @@
+import "dotenv/config";
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 function getS3Client() {
-  const accessKeyId = process.env.S3_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
-  const endpoint = process.env.S3_ENDPOINT;
+  const accessKeyId = process.env.S3_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY?.trim();
+  const endpoint = process.env.S3_ENDPOINT?.trim();
 
   if (!accessKeyId || !secretAccessKey || !endpoint) {
     throw new Error(
-      "Storage is not configured. Add S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and S3_ENDPOINT.",
+      "Storage is not configured. Add S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and S3_ENDPOINT to .env (local) or your host env (Vercel/Lovable), then restart the app.",
     );
   }
 
@@ -20,7 +21,7 @@ function getS3Client() {
 }
 
 function getBucketName() {
-  return process.env.S3_BUCKET_NAME || "products";
+  return process.env.S3_BUCKET_NAME?.trim() || "Products";
 }
 
 function getPublicObjectUrl(key: string) {
