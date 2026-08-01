@@ -249,6 +249,12 @@ function AdminProducts() {
                               );
                               return;
                             }
+                            if (!product.image?.trim() || product.image.includes("placehold.co")) {
+                              toast.error(
+                                "Upload a real product image in Edit — hatikvahcare.com hides products without one.",
+                              );
+                              return;
+                            }
                             window.open(
                               `${STORE_URL}/product/${product.id}`,
                               "_blank",

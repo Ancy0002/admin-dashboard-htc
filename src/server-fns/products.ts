@@ -57,6 +57,14 @@ function normalizeProduct(data: ValidatedCreateProductInput): ValidatedCreatePro
   }
 
   const image = data.image.trim();
+  if (
+    data.isListed &&
+    (!image || image.includes("placehold.co") || image.startsWith("data:") || image.startsWith("blob:"))
+  ) {
+    throw new Error(
+      "Upload a real product image before listing on the website. You can save as Hidden without an image.",
+    );
+  }
 
   return {
     ...data,
@@ -332,7 +340,10 @@ export const updateAdminProduct = createServerFn({ method: "POST" })
       [normalized.image, ...normalized.gallery, normalized.brandImage].filter(Boolean),
     );
     const removed = [existing.image, ...existing.gallery, existing.brandImage].filter(
-      (url): url is string => Boolean(url) && !nextUrls.has(url),
+      (url): url is string => {
+        if (!url) return false;
+        return !nextUrls.has(url);
+      },
     );
     await deleteProductImageFiles(removed);
 
