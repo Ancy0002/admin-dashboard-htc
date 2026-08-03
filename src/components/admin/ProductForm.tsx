@@ -5,7 +5,7 @@ import { Image, Plus, Save, Trash2, TrendingUp, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { INPUT_CLASS, LABEL_CLASS } from "@/lib/admin-form-styles";
 import { readFileAsDataUrl } from "@/lib/file-utils";
-import { storeProductUrl } from "@/lib/store-url";
+import { STORE_URL } from "@/lib/store-url";
 import {
   createAdminProduct,
   updateAdminProduct,
@@ -194,9 +194,14 @@ function initReviews(data?: ProductFormInitialData): ReviewRow[] {
 type ProductFormProps = {
   mode: "create" | "edit";
   initialData?: ProductFormInitialData;
+  /** Categories from DB (merged with defaults so new shops still have options). */
+  categories?: string[];
 };
 
-export function ProductForm({ mode, initialData }: ProductFormProps) {
+export function ProductForm({ mode, initialData, categories }: ProductFormProps) {
+  const categoryOptions = Array.from(
+    new Set([...(categories ?? []), ...PRODUCT_CATEGORIES, initialData?.category ?? ""].filter(Boolean)),
+  );
   const router = useRouter();
   const createProduct = useServerFn(createAdminProduct);
   const updateProduct = useServerFn(updateAdminProduct);
@@ -208,7 +213,7 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [name, setName] = useState(initialData?.name ?? "");
   const [category, setCategory] = useState(
-    initialData?.category ?? PRODUCT_CATEGORIES[0],
+    initialData?.category ?? categoryOptions[0] ?? PRODUCT_CATEGORIES[0],
   );
   const [description, setDescription] = useState(initialData?.description ?? "");
   const [keyIngredients, setKeyIngredients] = useState(initialData?.keyIngredients ?? "");
@@ -348,20 +353,17 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
 
       // Warn early if the live site cannot see this row (usually DATABASE_URL mismatch on Linux).
       if (payload.isListed && savedId) {
-        const liveUrl = storeProductUrl(savedId);
         try {
-          const live = await fetch(liveUrl, { method: "GET" });
+          const live = await fetch(`${STORE_URL}/product/${savedId}`, { method: "GET" });
           const html = await live.text();
           if (/Product Not Found/i.test(html)) {
             toast.error(
-              `Saved in admin, but live page is missing: ${liveUrl}. On the Linux main app, use the same DATABASE_URL and restart with --update-env.`,
+              "Saved in admin DB, but hatikvahcare.com cannot see it yet. On the Linux main app, set the same DATABASE_URL as this admin .env and restart.",
               { duration: 12_000 },
             );
-          } else {
-            toast.success(`Live product link: ${liveUrl}`);
           }
         } catch {
-          toast.message(`Live product link: ${liveUrl}`);
+          // Ignore network failures — save itself succeeded.
         }
       }
 
@@ -526,12 +528,12 @@ export function ProductForm({ mode, initialData }: ProductFormProps) {
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                   >
-                    {PRODUCT_CATEGORIES.map((cat) => (
+                    {categoryOptions.map((cat) => (
                       <option key={cat} value={cat}>
                         {cat}
                       </option>
                     ))}
-                    {!PRODUCT_CATEGORIES.includes(category as (typeof PRODUCT_CATEGORIES)[number]) ? (
+                    {!categoryOptions.includes(category) ? (
                       <option value={category}>{category}</option>
                     ) : null}
                   </select>

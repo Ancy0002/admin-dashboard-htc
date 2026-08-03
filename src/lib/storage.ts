@@ -13,44 +13,65 @@ function getS3Client() {
   }
 
   return new S3Client({
-    region: process.env.S3_REGION || "ap-south-1",
+    region: process.env.S3_REGION?.trim() || "ap-south-1",
     endpoint,
     credentials: { accessKeyId, secretAccessKey },
     forcePathStyle: true,
   });
 }
 
-/** Must match main app `product.ts` sanitizeUrl (bucket + project hardcoding). */
-const LIVE_STORAGE_PROJECT_ID = "tdonwvbgqyyfkatrdxsx";
-const LIVE_STORAGE_BUCKET = "Products";
-
+/** Bucket from .env — must match Supabase Storage (live catalog uses Products). */
 function getBucketName() {
-  // Main website always reads from the "Products" bucket.
-  return LIVE_STORAGE_BUCKET;
+  return process.env.S3_BUCKET_NAME?.trim() || "Products";
+}
+
+/** Project ref derived from S3_ENDPOINT in .env (no hardcoded project id). */
+function getStorageProjectId() {
+  const endpoint = process.env.S3_ENDPOINT?.trim() || "";
+  const match = endpoint.match(/https:\/\/([^.]+)\.storage\.supabase\.co/);
+  return match?.[1] || "";
 }
 
 function getPublicObjectUrl(key: string) {
   const normalizedKey = key.replace(/^\//, "");
-  // Exact public URL shape expected by hatikvahcare.com product.ts:
-  // https://tdonwvbgqyyfkatrdxsx.storage.supabase.co/storage/v1/object/public/Products/uploads/...
-  return `https://${LIVE_STORAGE_PROJECT_ID}.storage.supabase.co/storage/v1/object/public/${LIVE_STORAGE_BUCKET}/${normalizedKey}`;
+  const bucket = getBucketName();
+  const projectId = getStorageProjectId();
+
+  if (projectId) {
+    return `https://${projectId}.storage.supabase.co/storage/v1/object/public/${bucket}/${normalizedKey}`;
+  }
+
+  const endpoint = process.env.S3_ENDPOINT?.trim() || "";
+  if (!endpoint) {
+    throw new Error("S3_ENDPOINT is not configured.");
+  }
+  return `${endpoint.replace(/\/$/, "")}/${bucket}/${normalizedKey}`;
 }
 
-/** Normalize any stored image value into the live-site URL shape when possible. */
+/** Normalize stored image values using .env storage settings. */
 export function toLiveProductImageUrl(url: string) {
   const trimmed = (url || "").trim();
   if (!trimmed) return trimmed;
 
-  if (
-    trimmed.includes(`${LIVE_STORAGE_PROJECT_ID}.storage.supabase.co`) &&
-    !trimmed.includes("@")
-  ) {
+  const projectId = getStorageProjectId();
+  if (projectId && trimmed.includes(`${projectId}.storage.supabase.co`) && !trimmed.includes("@")) {
     return trimmed;
   }
 
   const match = trimmed.match(/uploads\/(.*)$/);
   if (match) {
     return getPublicObjectUrl(`uploads/${match[1]}`);
+  }
+
+  // Fix older admin URLs missing ".storage" in the host.
+  if (projectId) {
+    const withoutStorage = `https://${projectId}.supabase.co/storage/v1/object/public/`;
+    if (trimmed.startsWith(withoutStorage)) {
+      return trimmed.replace(
+        withoutStorage,
+        `https://${projectId}.storage.supabase.co/storage/v1/object/public/`,
+      );
+    }
   }
 
   return trimmed;
@@ -116,7 +137,7 @@ export async function persistProductImage(value: string) {
   if (trimmed.startsWith("data:")) {
     return uploadProductImageDataUrl(trimmed);
   }
-  return trimmed;
+  return toLiveProductImageUrl(trimmed);
 }
 
 export async function persistProductImages(values: string[]) {

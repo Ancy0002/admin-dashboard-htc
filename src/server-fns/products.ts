@@ -14,13 +14,6 @@ import {
 } from "@/lib/storage";
 import { requireAdminSessionData } from "@/lib/admin-session";
 
-/**
- * Fallback image in the exact public URL shape expected by
- * hatikvah-care-fntd/src/app/actions/product.ts sanitizeUrl.
- */
-const DEFAULT_STORE_PRODUCT_IMAGE =
-  "https://tdonwvbgqyyfkatrdxsx.storage.supabase.co/storage/v1/object/public/Products/uploads/placeholder-product.png";
-
 function isUsableImageUrl(image: string) {
   const value = image.trim();
   if (!value) return false;
@@ -29,9 +22,19 @@ function isUsableImageUrl(image: string) {
   return true;
 }
 
+/** Prefer an existing catalog image from DB over any hardcoded URL. */
+async function defaultImageFromDatabase() {
+  const existing = await prisma.product.findFirst({
+    where: { NOT: { image: "" } },
+    orderBy: { updatedAt: "desc" },
+    select: { image: true },
+  });
+  return existing?.image ? toLiveProductImageUrl(existing.image) : "";
+}
+
 function resolveProductImage(image: string) {
-  if (!isUsableImageUrl(image)) return DEFAULT_STORE_PRODUCT_IMAGE;
-  return toLiveProductImageUrl(image.trim()) || DEFAULT_STORE_PRODUCT_IMAGE;
+  if (!isUsableImageUrl(image)) return "";
+  return toLiveProductImageUrl(image.trim());
 }
 
 async function assertAdmin() {
@@ -41,15 +44,15 @@ async function assertAdmin() {
 async function persistImageOrDefault(value: string) {
   const trimmed = value.trim();
   if (!isUsableImageUrl(trimmed) && !trimmed.startsWith("data:")) {
-    return DEFAULT_STORE_PRODUCT_IMAGE;
+    return defaultImageFromDatabase();
   }
 
   try {
     const persisted = await persistProductImage(trimmed);
-    return resolveProductImage(persisted);
+    return resolveProductImage(persisted) || (await defaultImageFromDatabase());
   } catch {
-    // S3 optional — still save the product so it can appear on hatikvahcare.com
-    return DEFAULT_STORE_PRODUCT_IMAGE;
+    // S3 optional — fall back to an image already stored in the same DB.
+    return defaultImageFromDatabase();
   }
 }
 
@@ -330,6 +333,17 @@ export const getAdminProductStats = createServerFn({ method: "GET" }).handler(as
   return { total, active, outOfStock };
 });
 
+/** Distinct categories currently stored in the shared product table. */
+export const getAdminProductCategories = createServerFn({ method: "GET" }).handler(async () => {
+  await assertAdmin();
+  const rows = await prisma.product.findMany({
+    select: { category: true },
+    distinct: ["category"],
+    orderBy: { category: "asc" },
+  });
+  return rows.map((r) => r.category).filter(Boolean);
+});
+
 export const getAdminProductById = createServerFn({ method: "GET" })
   .validator((id: string) => {
     if (!id?.trim()) throw new Error("Product id is required.");
@@ -440,3 +454,68 @@ export const deleteAdminProduct = createServerFn({ method: "POST" })
     ]);
     return { success: true };
   });
+
+/**
+ * Compares the newest listed admin product against hatikvahcare.com.
+ * If admin has it but live returns Product Not Found, DATABASE_URL on the
+ * running main app is not the same DB (or the process needs restart --update-env).
+ */
+export const checkStorefrontSync = createServerFn({ method: "GET" }).handler(async () => {
+  await assertAdmin();
+
+  const storeUrl = (
+    process.env.VITE_STORE_URL || "https://hatikvahcare.com"
+  ).replace(/\/$/, "");
+
+  const latest = await prisma.product.findFirst({
+    where: { isListed: true },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true, name: true, updatedAt: true },
+  });
+
+  if (!latest) {
+    return {
+      synced: true as const,
+      storeUrl,
+      checkedProductId: null as string | null,
+      checkedProductName: null as string | null,
+      liveProductUrl: null as string | null,
+      liveStatus: "no-listed-products" as const,
+      message: "No listed products in admin database yet.",
+    };
+  }
+
+  const liveProductUrl = `${storeUrl}/product/${latest.id}`;
+  try {
+    const response = await fetch(liveProductUrl, {
+      method: "GET",
+      headers: { Accept: "text/html" },
+      cache: "no-store",
+    });
+    const html = await response.text();
+    const notFound = /Product Not Found/i.test(html);
+    const synced = !notFound;
+
+    return {
+      synced,
+      storeUrl,
+      checkedProductId: latest.id,
+      checkedProductName: latest.name,
+      liveProductUrl,
+      liveStatus: notFound ? ("not-found" as const) : ("ok" as const),
+      message: synced
+        ? `Live site can see “${latest.name}”. Admin and ${storeUrl} are using the same catalog.`
+        : `“${latest.name}” is in admin DB but missing on ${storeUrl}. On the Linux main app, set the same DATABASE_URL as this admin and restart with: pm2 restart <app> --update-env`,
+    };
+  } catch {
+    return {
+      synced: false as const,
+      storeUrl,
+      checkedProductId: latest.id,
+      checkedProductName: latest.name,
+      liveProductUrl,
+      liveStatus: "unreachable" as const,
+      message: `Could not reach ${liveProductUrl}. Check that the main site is online.`,
+    };
+  }
+});

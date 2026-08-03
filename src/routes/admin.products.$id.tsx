@@ -1,14 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ProductForm } from "@/components/admin/ProductForm";
-import { getAdminProductById } from "@/server-fns/products";
+import { getAdminProductById, getAdminProductCategories } from "@/server-fns/products";
 
 export const Route = createFileRoute("/admin/products/$id")({
-  loader: ({ params }) => getAdminProductById({ data: params.id }),
+  loader: async ({ params }) => {
+    const [product, categories] = await Promise.all([
+      getAdminProductById({ data: params.id }),
+      getAdminProductCategories(),
+    ]);
+    return { product, categories };
+  },
   component: EditProductPage,
 });
 
 function EditProductPage() {
-  const product = Route.useLoaderData();
+  const { product, categories } = Route.useLoaderData();
 
   if (!product) {
     return (
@@ -19,5 +25,5 @@ function EditProductPage() {
     );
   }
 
-  return <ProductForm mode="edit" initialData={product} />;
+  return <ProductForm mode="edit" initialData={product} categories={categories} />;
 }
