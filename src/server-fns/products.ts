@@ -22,15 +22,6 @@ function isUsableImageUrl(image: string) {
   return true;
 }
 
-/** Prefer an existing catalog image from DB over any hardcoded URL. */
-async function defaultImageFromDatabase() {
-  const existing = await prisma.product.findFirst({
-    where: { NOT: { image: "" } },
-    orderBy: { updatedAt: "desc" },
-    select: { image: true },
-  });
-  return existing?.image ? toLiveProductImageUrl(existing.image) : "";
-}
 
 function resolveProductImage(image: string) {
   if (!isUsableImageUrl(image)) return "";
@@ -44,15 +35,15 @@ async function assertAdmin() {
 async function persistImageOrDefault(value: string) {
   const trimmed = value.trim();
   if (!isUsableImageUrl(trimmed) && !trimmed.startsWith("data:")) {
-    return defaultImageFromDatabase();
+    return "";
   }
 
   try {
     const persisted = await persistProductImage(trimmed);
-    return resolveProductImage(persisted) || (await defaultImageFromDatabase());
+    return resolveProductImage(persisted) || "";
   } catch {
-    // S3 optional — fall back to an image already stored in the same DB.
-    return defaultImageFromDatabase();
+    // S3 optional — return empty string if upload fails.
+    return "";
   }
 }
 
