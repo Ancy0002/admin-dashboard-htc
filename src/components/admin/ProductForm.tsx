@@ -30,7 +30,10 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={cn("relative h-6 w-11 rounded-full transition", checked ? "bg-success" : "bg-muted")}
+      className={cn(
+        "relative h-6 w-11 rounded-full transition",
+        checked ? "bg-success" : "bg-muted",
+      )}
     >
       <span
         className={cn(
@@ -200,7 +203,9 @@ type ProductFormProps = {
 
 export function ProductForm({ mode, initialData, categories }: ProductFormProps) {
   const categoryOptions = Array.from(
-    new Set([...(categories ?? []), ...PRODUCT_CATEGORIES, initialData?.category ?? ""].filter(Boolean)),
+    new Set(
+      [...(categories ?? []), ...PRODUCT_CATEGORIES, initialData?.category ?? ""].filter(Boolean),
+    ),
   );
   const router = useRouter();
   const createProduct = useServerFn(createAdminProduct);
@@ -272,7 +277,9 @@ export function ProductForm({ mode, initialData, categories }: ProductFormProps)
     try {
       const urls = await Promise.all(Array.from(files).map((file) => uploadFileToStorage(file)));
       setGallery((prev) => [...prev, ...urls]);
-      toast.success(urls.length === 1 ? "Gallery image uploaded" : `${urls.length} gallery images uploaded`);
+      toast.success(
+        urls.length === 1 ? "Gallery image uploaded" : `${urls.length} gallery images uploaded`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to upload gallery image.");
     } finally {
@@ -323,16 +330,17 @@ export function ProductForm({ mode, initialData, categories }: ProductFormProps)
 
     // Keep quantity tiers priced — live site expects usable pricePerUnit values.
     const basePrice = payload.sizes[0]?.price ?? 0;
-    payload.quantityVariants = (payload.quantityVariants.length
-      ? payload.quantityVariants
-      : [
-          {
-            quantity: 1,
-            pricePerUnit: basePrice,
-            savedAmount: null,
-            savingsPercent: null,
-          },
-        ]
+    payload.quantityVariants = (
+      payload.quantityVariants.length
+        ? payload.quantityVariants
+        : [
+            {
+              quantity: 1,
+              pricePerUnit: basePrice,
+              savedAmount: null,
+              savingsPercent: null,
+            },
+          ]
     ).map((qv) => ({
       ...qv,
       pricePerUnit: qv.pricePerUnit > 0 ? qv.pricePerUnit : basePrice,
@@ -407,7 +415,10 @@ export function ProductForm({ mode, initialData, categories }: ProductFormProps)
       <div className="space-y-6 p-10">
         <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
           <div className="space-y-6">
-            <CardSection title="Main Product Image" icon={<Image className="h-5 w-5" aria-hidden="true" />}>
+            <CardSection
+              title="Main Product Image"
+              icon={<Image className="h-5 w-5" aria-hidden="true" />}
+            >
               <button
                 type="button"
                 disabled={uploadingImage}
@@ -415,11 +426,7 @@ export function ProductForm({ mode, initialData, categories }: ProductFormProps)
                 className="relative flex aspect-square w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border-2 border-dashed border-border bg-secondary/30 transition hover:bg-secondary/50 disabled:opacity-60"
               >
                 {image ? (
-                  <img
-                    src={image}
-                    alt="Product preview"
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={image} alt="Product preview" className="h-full w-full object-cover" />
                 ) : (
                   <>
                     <div className="grid h-14 w-14 place-items-center rounded-xl bg-card">
@@ -504,7 +511,9 @@ export function ProductForm({ mode, initialData, categories }: ProductFormProps)
                 </button>
               </div>
               {gallery.length === 0 ? (
-                <p className="mt-3 text-xs italic text-muted-foreground">No gallery images added yet.</p>
+                <p className="mt-3 text-xs italic text-muted-foreground">
+                  No gallery images added yet.
+                </p>
               ) : null}
             </CardSection>
           </div>
@@ -977,9 +986,7 @@ export function ProductForm({ mode, initialData, categories }: ProductFormProps)
             <button
               type="button"
               className="inline-flex items-center gap-1 text-sm text-primary"
-              onClick={() =>
-                setReviews([...reviews, { userName: "", rating: "5", comment: "" }])
-              }
+              onClick={() => setReviews([...reviews, { userName: "", rating: "5", comment: "" }])}
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Add Review
@@ -991,7 +998,10 @@ export function ProductForm({ mode, initialData, categories }: ProductFormProps)
           ) : null}
           <div className="space-y-3">
             {reviews.map((review, i) => (
-              <div key={i} className="space-y-3 rounded-xl border border-border bg-secondary/30 p-4">
+              <div
+                key={i}
+                className="space-y-3 rounded-xl border border-border bg-secondary/30 p-4"
+              >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">Review {i + 1}</span>
                   <button

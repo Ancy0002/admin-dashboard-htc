@@ -91,11 +91,7 @@ export function AdminSidebar() {
 
       <nav className="flex-1 space-y-1 px-3">
         {navItems.map((item) => {
-          const active = pathMatches(
-            activePath,
-            item.to,
-            "exact" in item ? item.exact : false,
-          );
+          const active = pathMatches(activePath, item.to, "exact" in item ? item.exact : false);
 
           return (
             <Link

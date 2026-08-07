@@ -39,7 +39,10 @@ function AdminAnalytics() {
                   <span className="text-muted-foreground">{cat.pct}%</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-secondary/20">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${cat.pct}%` }} />
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${cat.pct}%` }}
+                  />
                 </div>
               </div>
             ))}

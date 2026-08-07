@@ -13,7 +13,7 @@ export type Catalogue = {
 
 async function ensureDefaultCatalogues() {
   const existing = await prisma.cataloguePdf.findMany({ select: { name: true } });
-  const names = new Set(existing.map((row) => row.name));
+  const names = new Set(existing.map((row: { name: any; }) => row.name));
 
   for (let i = 0; i < CATALOGUE_CATEGORIES.length; i++) {
     const name = CATALOGUE_CATEGORIES[i];
@@ -45,8 +45,8 @@ export const getStoreCatalogues = createServerFn({ method: "GET" }).handler(asyn
   });
 
   return rows
-    .filter((row) => row.pdfUrl)
-    .map((row) => ({
+    .filter((row: { pdfUrl: any; }) => row.pdfUrl)
+    .map((row: { id: any; name: any; pdfUrl: any; fileName: any; }) => ({
       id: row.id,
       name: row.name,
       pdfUrl: row.pdfUrl!,

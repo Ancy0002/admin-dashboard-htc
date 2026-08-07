@@ -1,16 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  Download,
-  Eye,
-  EyeOff,
-  Globe,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { Download, Eye, EyeOff, Globe, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { STORE_URL } from "@/lib/store-url";
 import {

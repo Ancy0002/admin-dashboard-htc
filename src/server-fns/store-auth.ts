@@ -1,10 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { secureEqual } from "@/lib/secure-compare";
 import { maskEmail } from "@/lib/store-auth";
-import {
-  getAdminSessionManager,
-  requireAdminSessionData,
-} from "@/lib/admin-session";
+import { getAdminSessionManager, requireAdminSessionData } from "@/lib/admin-session";
 
 function readEnv(name: string) {
   // Dynamic key access avoids Vite inlining undefined at build time on Vercel.
@@ -25,7 +22,7 @@ export const loginStoreUser = createServerFn({ method: "POST" })
 
     if (!allowedEmail || !allowedPassword) {
       throw new Error(
-        "Sign in is not configured on the server. Add STORE_LOGIN_EMAIL and STORE_LOGIN_PASSWORD in Vercel Environment Variables, then redeploy.",
+        "Sign in is not configured. Add STORE_LOGIN_EMAIL and STORE_LOGIN_PASSWORD to .env (or host env), then restart/redeploy.",
       );
     }
 

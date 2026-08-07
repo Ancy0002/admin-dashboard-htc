@@ -9,7 +9,7 @@ export const getAdminReviews = createServerFn({ method: "GET" }).handler(async (
     take: 50,
   });
 
-  return reviews.map((review) => ({
+  return reviews.map((review: { id: any; userName: any; product: { name: any; }; rating: any; comment: any; createdAt: string | Date; }) => ({
     id: review.id,
     customer: review.userName,
     product: review.product.name,

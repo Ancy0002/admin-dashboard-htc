@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import prisma from "@/lib/prisma";
 import { formatCurrency } from "@/lib/admin-utils";
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus } from "@/lib/order-status";
 
 export const getAdminCustomers = createServerFn({ method: "GET" }).handler(async () => {
   const users = await prisma.user.findMany({
@@ -15,7 +15,7 @@ export const getAdminCustomers = createServerFn({ method: "GET" }).handler(async
     orderBy: { createdAt: "desc" },
   });
 
-  return users.map((user) => ({
+  return users.map((user: { id: any; name: any; email: any; mobile: any; _count: { orders: any; }; orders: any[]; }) => ({
     id: user.id,
     name: user.name || "Guest",
     email: user.email || `${user.mobile}@hatikvah.local`,

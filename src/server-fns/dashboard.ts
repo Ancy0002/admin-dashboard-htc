@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import prisma from "@/lib/prisma";
 import { formatCurrency, formatIndianCurrency } from "@/lib/admin-utils";
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus, type OrderStatus as OrderStatusValue } from "@/lib/order-status";
 
-function formatOrderStatus(status: OrderStatus) {
+function formatOrderStatus(status: OrderStatusValue | string) {
   switch (status) {
     case OrderStatus.DELIVERED:
     case OrderStatus.SUCCESS:
@@ -19,7 +19,7 @@ function formatOrderStatus(status: OrderStatus) {
   }
 }
 
-const revenueStatuses: OrderStatus[] = [
+const revenueStatuses: OrderStatusValue[] = [
   OrderStatus.SUCCESS,
   OrderStatus.DELIVERED,
   OrderStatus.SHIPPED,
@@ -62,7 +62,7 @@ export const getAdminDashboard = createServerFn({ method: "GET" }).handler(async
     }),
   ]);
 
-  const totalRevenue = revenueOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const totalRevenue = revenueOrders.reduce((sum: any, o: { totalAmount: any; }) => sum + o.totalAmount, 0);
 
   return {
     stats: {
@@ -73,13 +73,13 @@ export const getAdminDashboard = createServerFn({ method: "GET" }).handler(async
       customers: customerCount,
       revenue: formatIndianCurrency(totalRevenue),
     },
-    recentOrders: recentOrders.map((order) => ({
+    recentOrders: recentOrders.map((order: { address: { name: any; }; user: { name: any; }; items: { productName: any; }[]; totalAmount: number; status: string; }) => ({
       customer: order.address?.name || order.user?.name || "Customer",
       product: order.items[0]?.productName || "Order items",
       amount: formatCurrency(order.totalAmount),
       status: formatOrderStatus(order.status),
     })),
-    topBestSellers: topBestSellers.map((p) => ({
+    topBestSellers: topBestSellers.map((p: { name: any; salesCount: any; }) => ({
       name: p.name,
       salesCount: p.salesCount,
     })),

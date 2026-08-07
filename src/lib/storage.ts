@@ -8,44 +8,39 @@ function getS3Client() {
 
   if (!accessKeyId || !secretAccessKey || !endpoint) {
     throw new Error(
-      "Storage is not configured. Add S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and S3_ENDPOINT to .env (local) or your host env (Vercel/Lovable), then restart the app.",
+      "Storage is not configured. Add S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and S3_ENDPOINT to .env, then restart the app.",
     );
   }
 
   return new S3Client({
-    region: process.env.S3_REGION?.trim() || "ap-south-1",
+    region: process.env.S3_REGION?.trim() || "us-east-1",
     endpoint,
     credentials: { accessKeyId, secretAccessKey },
     forcePathStyle: true,
   });
 }
 
-/** Bucket from .env — must match Supabase Storage (live catalog uses Products). */
+/** Bucket from .env (MinIO / S3-compatible). */
 function getBucketName() {
-  return process.env.S3_BUCKET_NAME?.trim() || "Products";
+  return process.env.S3_BUCKET_NAME?.trim() || "hatikvahstorage";
 }
 
-/** Project ref derived from S3_ENDPOINT in .env (no hardcoded project id). */
-function getStorageProjectId() {
-  const endpoint = process.env.S3_ENDPOINT?.trim() || "";
-  const match = endpoint.match(/https:\/\/([^.]+)\.storage\.supabase\.co/);
-  return match?.[1] || "";
+/** Public base URL for object links — prefers S3_PUBLIC_URL, else S3_ENDPOINT. */
+function getPublicBaseUrl() {
+  const publicUrl = process.env.S3_PUBLIC_URL?.trim();
+  if (publicUrl) return publicUrl.replace(/\/$/, "");
+
+  const endpoint = process.env.S3_ENDPOINT?.trim();
+  if (!endpoint) {
+    throw new Error("S3_ENDPOINT is not configured.");
+  }
+  return endpoint.replace(/\/$/, "");
 }
 
 function getPublicObjectUrl(key: string) {
   const normalizedKey = key.replace(/^\//, "");
   const bucket = getBucketName();
-  const projectId = getStorageProjectId();
-
-  if (projectId) {
-    return `https://${projectId}.storage.supabase.co/storage/v1/object/public/${bucket}/${normalizedKey}`;
-  }
-
-  const endpoint = process.env.S3_ENDPOINT?.trim() || "";
-  if (!endpoint) {
-    throw new Error("S3_ENDPOINT is not configured.");
-  }
-  return `${endpoint.replace(/\/$/, "")}/${bucket}/${normalizedKey}`;
+  return `${getPublicBaseUrl()}/${bucket}/${normalizedKey}`;
 }
 
 /** Normalize stored image values using .env storage settings. */
@@ -53,28 +48,11 @@ export function toLiveProductImageUrl(url: string) {
   const trimmed = (url || "").trim();
   if (!trimmed) return trimmed;
 
-  const projectId = getStorageProjectId();
-  if (projectId && trimmed.includes(`${projectId}.storage.supabase.co`) && !trimmed.includes("@")) {
-    return trimmed;
-  }
+  // Already an absolute URL — keep as-is.
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
 
-  const match = trimmed.match(/uploads\/(.*)$/);
-  if (match) {
-    return getPublicObjectUrl(`uploads/${match[1]}`);
-  }
-
-  // Fix older admin URLs missing ".storage" in the host.
-  if (projectId) {
-    const withoutStorage = `https://${projectId}.supabase.co/storage/v1/object/public/`;
-    if (trimmed.startsWith(withoutStorage)) {
-      return trimmed.replace(
-        withoutStorage,
-        `https://${projectId}.storage.supabase.co/storage/v1/object/public/`,
-      );
-    }
-  }
-
-  return trimmed;
+  // Relative object key → public MinIO/S3 URL from .env.
+  return getPublicObjectUrl(trimmed.replace(/^\//, ""));
 }
 
 function parseDataUrl(dataUrl: string) {
@@ -93,7 +71,7 @@ function extensionForContentType(contentType: string) {
   return "jpg";
 }
 
-/** Upload a data-URL image to shared storage so hatikvahcare.com can load it. */
+/** Upload a data-URL image to shared storage. */
 export async function uploadProductImageDataUrl(dataUrl: string, folder = "uploads") {
   const { contentType, buffer } = parseDataUrl(dataUrl);
   const ext = extensionForContentType(contentType);
@@ -121,7 +99,7 @@ export async function uploadProductImageDataUrl(dataUrl: string, folder = "uploa
       /NoSuchBucket/i.test(message)
     ) {
       throw new Error(
-        `Storage bucket "${bucket}" was not found. In Supabase → Storage create a public bucket named exactly "${bucket}" (case-sensitive), set S3_BUCKET_NAME to that same name, then restart the app.`,
+        `Storage bucket "${bucket}" was not found. Create that bucket in MinIO, set S3_BUCKET_NAME to the same name, then restart the app.`,
       );
     }
     throw error instanceof Error ? error : new Error(message);
@@ -130,7 +108,7 @@ export async function uploadProductImageDataUrl(dataUrl: string, folder = "uploa
   return getPublicObjectUrl(key);
 }
 
-/** Keep existing http(s) URLs; upload data URLs to S3. */
+/** Keep existing http(s) URLs; upload data URLs to S3/MinIO. */
 export async function persistProductImage(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return trimmed;
@@ -146,11 +124,11 @@ export async function persistProductImages(values: string[]) {
 
 function getObjectKeyFromUrl(url: string) {
   const bucket = getBucketName();
-  const publicMatch = url.match(/\/object\/public\/[^/]+\/(.+)$/);
-  if (publicMatch) return decodeURIComponent(publicMatch[1]);
-
   const minioMatch = url.match(new RegExp(`${bucket}/(.+)$`));
   if (minioMatch) return decodeURIComponent(minioMatch[1]);
+
+  const publicMatch = url.match(/\/object\/public\/[^/]+\/(.+)$/);
+  if (publicMatch) return decodeURIComponent(publicMatch[1]);
 
   return null;
 }

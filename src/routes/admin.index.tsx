@@ -1,12 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import {
-  CircleCheck,
-  Package,
-  ShoppingBag,
-  TrendingUp,
-  TriangleAlert,
-  Users,
-} from "lucide-react";
+import { CircleCheck, Package, ShoppingBag, TrendingUp, TriangleAlert, Users } from "lucide-react";
 import { getAdminDashboard } from "@/server-fns/dashboard";
 
 export const Route = createFileRoute("/admin/")({
@@ -21,7 +14,7 @@ export const Route = createFileRoute("/admin/")({
         error:
           error instanceof Error
             ? error.message
-            : "Unable to connect to the database. Check DATABASE_URL on Vercel.",
+            : "Unable to connect to the database. Check DATABASE_URL in .env.",
       };
     }
   },
@@ -33,21 +26,22 @@ function DatabaseSetupNotice({ message }: { message: string }) {
     <div className="mx-10 mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-950">
       <h2 className="text-lg font-semibold">Database connection required</h2>
       <p className="mt-2 text-sm">
-        The admin dashboard needs your Supabase PostgreSQL connection. Add these in Vercel →
-        Project Settings → Environment Variables, then redeploy:
+        The admin dashboard uses the self-hosted Postgres URL from your{" "}
+        <code className="rounded bg-white/70 px-1">.env</code>. Confirm these values, then restart
+        the app (and update the same vars on Vercel/Linux if deployed):
       </p>
       <ul className="mt-3 list-inside list-disc space-y-1 text-sm">
         <li>
-          <code className="rounded bg-white/70 px-1">DATABASE_URL</code> — Supabase pooler URL
-          (port 6543, with <code className="rounded bg-white/70 px-1">?pgbouncer=true</code>)
+          <code className="rounded bg-white/70 px-1">DATABASE_URL</code> — Postgres connection
+          string
         </li>
         <li>
-          <code className="rounded bg-white/70 px-1">DIRECT_URL</code> — direct Postgres URL (port
-          5432)
+          <code className="rounded bg-white/70 px-1">DIRECT_URL</code> — same DB for Prisma
+          migrations
         </li>
         <li>
-          <code className="rounded bg-white/70 px-1">VITE_STORE_URL</code> — optional storefront
-          link for products
+          <code className="rounded bg-white/70 px-1">VITE_STORE_URL</code> — storefront link for
+          products
         </li>
       </ul>
       <p className="mt-3 text-xs text-amber-900/80">{message}</p>
@@ -186,9 +180,7 @@ function AdminDashboard() {
                   className="flex justify-between border-b border-border/60 py-2 text-sm"
                 >
                   <span className="line-clamp-1">{product.name}</span>
-                  <span className="shrink-0 text-muted-foreground">
-                    {product.salesCount} sold
-                  </span>
+                  <span className="shrink-0 text-muted-foreground">{product.salesCount} sold</span>
                 </div>
               ))}
             </div>

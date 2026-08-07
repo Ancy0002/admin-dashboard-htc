@@ -12,7 +12,7 @@ export const getAdminOrders = createServerFn({ method: "GET" }).handler(async ()
     orderBy: { createdAt: "desc" },
   });
 
-  return orders.map((order) => ({
+  return orders.map((order: { id: string | any[]; razorpayOrderId: any; address: { name: any; mobile: any; }; user: { name: any; mobile: any; email: any; }; totalAmount: number; status: any; createdAt: string | Date; items: any[]; }) => ({
     id: order.id,
     displayId: order.razorpayOrderId || order.id.slice(-8),
     customer: order.address?.name || order.user?.name || "N/A",
@@ -22,7 +22,7 @@ export const getAdminOrders = createServerFn({ method: "GET" }).handler(async ()
     totalAmount: order.totalAmount,
     status: order.status,
     date: formatDate(order.createdAt),
-    createdAt: order.createdAt.toISOString(),
+    createdAt: order.createdAt.toString(),
     itemCount: order.items.length,
     items: order.items.map((item) => ({
       productName: item.productName,

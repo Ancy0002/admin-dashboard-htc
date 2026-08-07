@@ -22,7 +22,6 @@ function isUsableImageUrl(image: string) {
   return true;
 }
 
-
 function resolveProductImage(image: string) {
   if (!isUsableImageUrl(image)) return "";
   return toLiveProductImageUrl(image.trim());
@@ -130,8 +129,7 @@ function productScalars(data: ValidatedCreateProductInput) {
     keyIngredients: data.keyIngredients,
     skinType: data.skinType,
     benefit: data.benefit,
-    additionalInfo:
-      Object.keys(data.additionalInfo).length > 0 ? data.additionalInfo : undefined,
+    additionalInfo: Object.keys(data.additionalInfo).length > 0 ? data.additionalInfo : undefined,
     note: data.note || "",
     dispatchmentDetails: data.dispatchmentDetails || "",
     returnableInfo: data.returnableInfo || "",
@@ -332,7 +330,7 @@ export const getAdminProductCategories = createServerFn({ method: "GET" }).handl
     distinct: ["category"],
     orderBy: { category: "asc" },
   });
-  return rows.map((r) => r.category).filter(Boolean);
+  return rows.map((r: { category: any; }) => r.category).filter(Boolean);
 });
 
 export const getAdminProductById = createServerFn({ method: "GET" })
@@ -438,11 +436,7 @@ export const deleteAdminProduct = createServerFn({ method: "POST" })
     if (!existing) throw new Error("Product not found");
 
     await prisma.product.delete({ where: { id } });
-    await deleteProductImageFiles([
-      existing.image,
-      ...existing.gallery,
-      existing.brandImage,
-    ]);
+    await deleteProductImageFiles([existing.image, ...existing.gallery, existing.brandImage]);
     return { success: true };
   });
 
@@ -454,9 +448,7 @@ export const deleteAdminProduct = createServerFn({ method: "POST" })
 export const checkStorefrontSync = createServerFn({ method: "GET" }).handler(async () => {
   await assertAdmin();
 
-  const storeUrl = (
-    process.env.VITE_STORE_URL || "https://hatikvahcare.com"
-  ).replace(/\/$/, "");
+  const storeUrl = (process.env.VITE_STORE_URL || "https://hatikvahcare.com").replace(/\/$/, "");
 
   const latest = await prisma.product.findFirst({
     where: { isListed: true },

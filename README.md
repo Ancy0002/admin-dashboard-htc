@@ -1,44 +1,34 @@
-# Admin dashboard (Vercel) → live storefront (https://hatikvahcare.com)
+# Admin dashboard → live storefront (https://hatikvahcare.com)
 
 ## How product sync works
 
-1. Admin saves a product into **Postgres** (Supabase) with Prisma.
+1. Admin saves a product into **Postgres** with Prisma.
 2. [hatikvahcare.com](https://hatikvahcare.com/) reads the **same** Postgres database.
-3. Live product URL format (same as existing catalog items):
+3. Live product URL format:
 
 ```text
 https://hatikvahcare.com/product/<product-id>
 ```
 
-Example that already works:
-
-```text
-https://hatikvahcare.com/product/cmq9hy336000l04ldf2qmr2e2
-```
-
 If admin and the live Linux app use different `DATABASE_URL` values (or the Linux process was not restarted after env change), new products save in admin but show **Product Not Found** on the live site.
 
-## Required configuration (must match everywhere)
+## Required configuration
 
-Set these in:
-
-- local `.env`
-- **Vercel** project env (Production + redeploy)
-- **Linux main app** env that serves hatikvahcare.com (then restart)
+Copy values into local `.env`, Vercel, and the Linux main-app env (then restart).
 
 ```env
-# SAME database the live site uses
-DATABASE_URL="postgresql://...@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://...@aws-1-ap-south-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL="postgresql://..."
+DIRECT_URL="postgresql://..."
 
 VITE_STORE_URL="https://hatikvahcare.com"
 
-# Same Supabase storage the live catalog uses
 S3_ACCESS_KEY_ID="..."
 S3_SECRET_ACCESS_KEY="..."
-S3_ENDPOINT="https://tdonwvbgqyyfkatrdxsx.storage.supabase.co/storage/v1/s3"
-S3_REGION="ap-south-1"
-S3_BUCKET_NAME="Products"
+S3_ENDPOINT="https://storage.hatikvahcare.com"
+S3_REGION="us-east-1"
+S3_BUCKET_NAME="hatikvahstorage"
+# Optional if public URL differs from S3_ENDPOINT:
+# S3_PUBLIC_URL="http://HOST:9000"
 
 STORE_LOGIN_EMAIL="..."
 STORE_LOGIN_PASSWORD="..."
@@ -46,13 +36,11 @@ STORE_LOGIN_PASSWORD="..."
 
 ### Linux restart (critical)
 
-After updating `.env` on the server:
-
 ```bash
 pm2 restart <app-name> --update-env
 ```
 
-2. Run:
+### Local
 
 ```bash
 npm install

@@ -35,6 +35,8 @@ export function getAdminSessionConfig(): SessionConfig {
 }
 
 export async function getAdminSessionManager() {
+  // TanStack Start server session API (not a React Hook).
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- framework server helper
   return useSession<AdminSessionData>(getAdminSessionConfig());
 }
 

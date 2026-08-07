@@ -28,8 +28,7 @@ export const Route = createFileRoute("/admin/settings")({
       console.error("[admin settings]", error);
       return {
         catalogues: [] as Catalogue[],
-        loadError:
-          error instanceof Error ? error.message : "Unable to load catalogue settings.",
+        loadError: error instanceof Error ? error.message : "Unable to load catalogue settings.",
       };
     }
   },
@@ -140,7 +139,11 @@ function AdminSettings() {
           <h2 className="font-bold text-lg">Store</h2>
           <div>
             <label className={LABEL_CLASS}>Store Name</label>
-            <input value={storeName} onChange={(e) => setStoreName(e.target.value)} className={INPUT_CLASS} />
+            <input
+              value={storeName}
+              onChange={(e) => setStoreName(e.target.value)}
+              className={INPUT_CLASS}
+            />
           </div>
           <div>
             <label className={LABEL_CLASS}>Store Address (origin for distance calculation)</label>
@@ -153,23 +156,46 @@ function AdminSettings() {
           <div className="grid sm:grid-cols-2 gap-5">
             <div>
               <label className={LABEL_CLASS}>Store Latitude</label>
-              <input type="number" step="0.000001" value={latitude} onChange={(e) => setLatitude(e.target.value)} className={INPUT_CLASS} />
+              <input
+                type="number"
+                step="0.000001"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+                className={INPUT_CLASS}
+              />
             </div>
             <div>
               <label className={LABEL_CLASS}>Store Longitude</label>
-              <input type="number" step="0.000001" value={longitude} onChange={(e) => setLongitude(e.target.value)} className={INPUT_CLASS} />
+              <input
+                type="number"
+                step="0.000001"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                className={INPUT_CLASS}
+              />
             </div>
             <div>
               <label className={LABEL_CLASS}>GST (%)</label>
-              <input type="number" value={gst} onChange={(e) => setGst(e.target.value)} className={INPUT_CLASS} />
+              <input
+                type="number"
+                value={gst}
+                onChange={(e) => setGst(e.target.value)}
+                className={INPUT_CLASS}
+              />
             </div>
             <div>
               <label className={LABEL_CLASS}>Free Delivery Above (₹)</label>
-              <input type="number" value={freeDeliveryAbove} onChange={(e) => setFreeDeliveryAbove(e.target.value)} className={INPUT_CLASS} />
+              <input
+                type="number"
+                value={freeDeliveryAbove}
+                onChange={(e) => setFreeDeliveryAbove(e.target.value)}
+                className={INPUT_CLASS}
+              />
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Tip: Search the store address on Google Maps, right-click the pin, and copy the lat/lng pair.
+            Tip: Search the store address on Google Maps, right-click the pin, and copy the lat/lng
+            pair.
           </p>
         </div>
 
@@ -177,11 +203,18 @@ function AdminSettings() {
           <div className="flex justify-between items-center mb-5">
             <div>
               <h2 className="font-bold text-lg">Delivery Tiers</h2>
-              <p className="text-sm text-muted-foreground">Flat fee per radius (km) from the store.</p>
+              <p className="text-sm text-muted-foreground">
+                Flat fee per radius (km) from the store.
+              </p>
             </div>
             <button
               type="button"
-              onClick={() => setDeliveryTiers((tiers) => [...tiers, { id: crypto.randomUUID(), radius: 0, fee: 0 }])}
+              onClick={() =>
+                setDeliveryTiers((tiers) => [
+                  ...tiers,
+                  { id: crypto.randomUUID(), radius: 0, fee: 0 },
+                ])
+              }
               className="text-sm text-primary inline-flex items-center gap-1"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
@@ -223,7 +256,9 @@ function AdminSettings() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setDeliveryTiers((tiers) => tiers.filter((item) => item.id !== tier.id))}
+                  onClick={() =>
+                    setDeliveryTiers((tiers) => tiers.filter((item) => item.id !== tier.id))
+                  }
                   className="p-3 rounded-lg bg-destructive/10 text-destructive"
                   aria-label="Remove delivery tier"
                 >
@@ -239,7 +274,8 @@ function AdminSettings() {
             <div>
               <h2 className="font-bold text-lg">Category Catalogues (PDF)</h2>
               <p className="text-sm text-muted-foreground">
-                Upload a PDF per category. Customers can download these from the home page &quot;View catalogue&quot; button.
+                Upload a PDF per category. Customers can download these from the home page
+                &quot;View catalogue&quot; button.
               </p>
             </div>
             <button
@@ -272,14 +308,19 @@ function AdminSettings() {
               const isDefault = isDefaultCatalogueCategory(catalogue.name);
 
               return (
-                <div key={catalogue.id} className="flex items-center gap-3 p-3 rounded-xl border border-border">
+                <div
+                  key={catalogue.id}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-border"
+                >
                   <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0">
                     <FileText className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <input
                       value={getName(catalogue.id, catalogue.name)}
-                      onChange={(e) => setNames((prev) => ({ ...prev, [catalogue.id]: e.target.value }))}
+                      onChange={(e) =>
+                        setNames((prev) => ({ ...prev, [catalogue.id]: e.target.value }))
+                      }
                       onBlur={() =>
                         run(async () => {
                           const name = getName(catalogue.id, catalogue.name);

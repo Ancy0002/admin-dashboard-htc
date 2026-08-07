@@ -31,4 +31,3 @@ export function setStoreSession(session: StoreSession) {
 export function clearStoreSession() {
   sessionStorage.removeItem(SESSION_KEY);
 }
-

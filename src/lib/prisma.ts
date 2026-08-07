@@ -1,13 +1,10 @@
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
 function shouldUseSsl(connectionString: string) {
-  return (
-    process.env.NODE_ENV === "production" ||
-    connectionString.includes("supabase") ||
-    connectionString.includes("sslmode=require")
-  );
+  return connectionString.includes("sslmode=require") || connectionString.includes("supabase");
 }
 
 const prismaClientSingleton = () => {
@@ -15,7 +12,7 @@ const prismaClientSingleton = () => {
 
   if (!connectionString) {
     throw new Error(
-      "DATABASE_URL is not configured. Use the same DATABASE_URL as the live hatikvahcare.com server.",
+      "DATABASE_URL is not configured. Set it in .env to the same value used by hatikvahcare.com.",
     );
   }
 

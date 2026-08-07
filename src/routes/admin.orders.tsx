@@ -86,7 +86,9 @@ function AdminOrders() {
                       {order.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-xs font-medium text-muted-foreground">{order.date}</td>
+                  <td className="px-6 py-4 text-xs font-medium text-muted-foreground">
+                    {order.date}
+                  </td>
                 </tr>
               ))}
             </tbody>
