@@ -1,4 +1,4 @@
-/** Mirrors prisma `OrderStatus` enum — avoid importing enums from `@prisma/client` (TS2305 in IDE). */
+/** Mirrors prisma `OrderStatus` enum - avoid importing enums from `@prisma/client` (TS2305 in IDE). */
 export const OrderStatus = {
   PENDING: "PENDING",
   SUCCESS: "SUCCESS",

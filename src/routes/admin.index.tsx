@@ -32,15 +32,15 @@ function DatabaseSetupNotice({ message }: { message: string }) {
       </p>
       <ul className="mt-3 list-inside list-disc space-y-1 text-sm">
         <li>
-          <code className="rounded bg-white/70 px-1">DATABASE_URL</code> — Postgres connection
+          <code className="rounded bg-white/70 px-1">DATABASE_URL</code> - Postgres connection
           string
         </li>
         <li>
-          <code className="rounded bg-white/70 px-1">DIRECT_URL</code> — same DB for Prisma
+          <code className="rounded bg-white/70 px-1">DIRECT_URL</code> - same DB for Prisma
           migrations
         </li>
         <li>
-          <code className="rounded bg-white/70 px-1">VITE_STORE_URL</code> — storefront link for
+          <code className="rounded bg-white/70 px-1">VITE_STORE_URL</code> - storefront link for
           products
         </li>
       </ul>
@@ -59,7 +59,7 @@ function AdminDashboard() {
           <div>
             <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
             <p className="mt-1 text-muted-foreground">
-              Welcome back — here&apos;s how your store is performing.
+              Welcome back - here&apos;s how your store is performing.
             </p>
           </div>
         </div>
@@ -115,7 +115,7 @@ function AdminDashboard() {
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
           <p className="mt-1 text-muted-foreground">
-            Welcome back — here&apos;s how your store is performing.
+            Welcome back - here&apos;s how your store is performing.
           </p>
         </div>
       </div>

@@ -149,3 +149,16 @@ model CataloguePdf {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+/** Shared store config used by admin Settings (same DATABASE_URL as hatikvahcare.com). */
+model StoreSettings {
+  id                String   @id @default("default")
+  storeName         String
+  storeAddress      String
+  latitude          Float
+  longitude         Float
+  gstPercent        Float    @default(18)
+  freeDeliveryAbove Float    @default(1500)
+  deliveryTiers     Json
+  updatedAt         DateTime @updatedAt
+}

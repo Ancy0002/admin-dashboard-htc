@@ -1,15 +1,13 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { FileText, Plus, Trash2, Upload } from "lucide-react";
+import { ExternalLink, FileText, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { INPUT_CLASS, LABEL_CLASS } from "@/lib/admin-form-styles";
+import { isDefaultCatalogueCategory } from "@/lib/catalogue-categories";
 import { fileToBase64 } from "@/lib/file-utils";
-import {
-  loadAdminSettings,
-  saveAdminSettings,
-  type DeliveryTier,
-} from "@/lib/admin-settings-storage";
+import { DEFAULT_STORE_SETTINGS, type DeliveryTierSetting } from "@/lib/store-settings-shared";
+import { STORE_URL } from "@/lib/store-url";
 import {
   clearCataloguePdf,
   createCatalogue,
@@ -18,71 +16,66 @@ import {
   saveCatalogue,
   type Catalogue,
 } from "@/server-fns/catalogues";
-import { isDefaultCatalogueCategory } from "@/lib/catalogue-categories";
+import { getAdminStoreSettings, saveStoreSettings } from "@/server-fns/store-settings";
 
 export const Route = createFileRoute("/admin/settings")({
   loader: async () => {
     try {
-      return { catalogues: await getAdminCatalogues(), loadError: null as string | null };
+      const [catalogues, settings] = await Promise.all([
+        getAdminCatalogues(),
+        getAdminStoreSettings(),
+      ]);
+      return { catalogues, settings, loadError: null as string | null };
     } catch (error) {
       console.error("[admin settings]", error);
       return {
         catalogues: [] as Catalogue[],
-        loadError: error instanceof Error ? error.message : "Unable to load catalogue settings.",
+        settings: null,
+        loadError: error instanceof Error ? error.message : "Unable to load settings.",
       };
     }
   },
   component: AdminSettings,
 });
 
-const DEFAULT_STORE = {
-  name: "HaTikvah",
-  address:
-    "Eshwar Nilayam, Plot no 4-1447, Kondapur, Golden Tulip Estate, JV Hills, Gachibowli, Hyderabad, Telangana 500084",
-  latitude: "17.4655",
-  longitude: "78.3489",
-  gst: "18",
-  freeDeliveryAbove: "1500",
-};
-
-const DEFAULT_TIERS: DeliveryTier[] = [
-  { id: "1", radius: 5, fee: 40 },
-  { id: "2", radius: 10, fee: 70 },
-  { id: "3", radius: 20, fee: 120 },
-  { id: "4", radius: 50, fee: 250 },
-];
+type DeliveryTierRow = { id: string; radius: number; fee: number };
 
 function AdminSettings() {
-  const { catalogues, loadError } = Route.useLoaderData();
+  const { catalogues, settings, loadError } = Route.useLoaderData();
   const router = useRouter();
   const createCatalogueFn = useServerFn(createCatalogue);
   const saveCatalogueFn = useServerFn(saveCatalogue);
   const deleteCatalogueFn = useServerFn(deleteCatalogue);
   const clearCataloguePdfFn = useServerFn(clearCataloguePdf);
+  const saveSettingsFn = useServerFn(saveStoreSettings);
 
-  const [storeName, setStoreName] = useState(DEFAULT_STORE.name);
-  const [storeAddress, setStoreAddress] = useState(DEFAULT_STORE.address);
-  const [latitude, setLatitude] = useState(DEFAULT_STORE.latitude);
-  const [longitude, setLongitude] = useState(DEFAULT_STORE.longitude);
-  const [gst, setGst] = useState(DEFAULT_STORE.gst);
-  const [freeDeliveryAbove, setFreeDeliveryAbove] = useState(DEFAULT_STORE.freeDeliveryAbove);
-  const [deliveryTiers, setDeliveryTiers] = useState(DEFAULT_TIERS);
+  const [storeName, setStoreName] = useState(settings?.storeName ?? DEFAULT_STORE_SETTINGS.storeName);
+  const [storeAddress, setStoreAddress] = useState(
+    settings?.storeAddress ?? DEFAULT_STORE_SETTINGS.storeAddress,
+  );
+  const [latitude, setLatitude] = useState(
+    String(settings?.latitude ?? DEFAULT_STORE_SETTINGS.latitude),
+  );
+  const [longitude, setLongitude] = useState(
+    String(settings?.longitude ?? DEFAULT_STORE_SETTINGS.longitude),
+  );
+  const [gst, setGst] = useState(String(settings?.gstPercent ?? DEFAULT_STORE_SETTINGS.gstPercent));
+  const [freeDeliveryAbove, setFreeDeliveryAbove] = useState(
+    String(settings?.freeDeliveryAbove ?? DEFAULT_STORE_SETTINGS.freeDeliveryAbove),
+  );
+  const [deliveryTiers, setDeliveryTiers] = useState<DeliveryTierRow[]>(
+    (settings?.deliveryTiers ?? DEFAULT_STORE_SETTINGS.deliveryTiers).map(
+      (tier: DeliveryTierSetting, index: number) => ({
+        id: String(index + 1),
+        radius: tier.radius,
+        fee: tier.fee,
+      }),
+    ),
+  );
   const [names, setNames] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const saved = loadAdminSettings();
-    if (!saved) return;
-
-    setStoreName(saved.storeName);
-    setStoreAddress(saved.storeAddress);
-    setLatitude(saved.latitude);
-    setLongitude(saved.longitude);
-    setGst(saved.gst);
-    setFreeDeliveryAbove(saved.freeDeliveryAbove);
-    setDeliveryTiers(saved.deliveryTiers);
-  }, []);
+  const [saving, setSaving] = useState(false);
 
   const getName = (id: string, fallback: string) => names[id] ?? fallback;
 
@@ -103,17 +96,27 @@ function AdminSettings() {
     }
   };
 
-  const save = () => {
-    saveAdminSettings({
-      storeName,
-      storeAddress,
-      latitude,
-      longitude,
-      gst,
-      freeDeliveryAbove,
-      deliveryTiers,
-    });
-    toast.success("Settings saved");
+  const save = async () => {
+    setSaving(true);
+    try {
+      await saveSettingsFn({
+        data: {
+          storeName,
+          storeAddress,
+          latitude,
+          longitude,
+          gst,
+          freeDeliveryAbove,
+          deliveryTiers,
+        },
+      });
+      toast.success("Settings saved to shared database");
+      await refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save settings.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -122,19 +125,37 @@ function AdminSettings() {
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground mt-1">
-            Configure store, taxes, delivery and catalogues.
+            Store config and catalogues synced via the shared database used by{" "}
+            <a
+              href={STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              hatikvahcare.com
+            </a>
+            .
           </p>
         </div>
         <button
           type="button"
-          onClick={save}
-          className="px-5 py-3 rounded-full bg-primary text-primary-foreground font-medium"
+          onClick={() => void save()}
+          disabled={saving}
+          className="px-5 py-3 rounded-full bg-primary text-primary-foreground font-medium disabled:opacity-60"
         >
-          Save Settings
+          {saving ? "Saving…" : "Save Settings"}
         </button>
       </div>
 
       <div className="p-10 space-y-6 max-w-3xl">
+        {loadError ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            {loadError.includes("StoreSettings") || loadError.includes("CataloguePdf")
+              ? "Settings tables are missing. Run `npx prisma db push` on your database, then restart the app."
+              : loadError}
+          </div>
+        ) : null}
+
         <div className="p-6 rounded-2xl border border-border bg-card space-y-5">
           <h2 className="font-bold text-lg">Store</h2>
           <div>
@@ -194,8 +215,8 @@ function AdminSettings() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Tip: Search the store address on Google Maps, right-click the pin, and copy the lat/lng
-            pair.
+            Defaults match hatikvahcare.com. Tip: Search the store address on Google Maps, right-click
+            the pin, and copy the lat/lng pair.
           </p>
         </div>
 
@@ -274,8 +295,16 @@ function AdminSettings() {
             <div>
               <h2 className="font-bold text-lg">Category Catalogues (PDF)</h2>
               <p className="text-sm text-muted-foreground">
-                Upload a PDF per category. Customers can download these from the home page
-                &quot;View catalogue&quot; button.
+                Upload a PDF per category for the{" "}
+                <a
+                  href={STORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  hatikvahcare.com
+                </a>{" "}
+                &quot;Explore Our Catalog&quot; menu.
               </p>
             </div>
             <button
@@ -288,14 +317,6 @@ function AdminSettings() {
               Add PDF
             </button>
           </div>
-
-          {loadError ? (
-            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-              {loadError.includes("CataloguePdf")
-                ? "Catalogue table is missing. Run `npx prisma db push` on your database, then redeploy."
-                : loadError}
-            </div>
-          ) : null}
 
           {error ? (
             <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -334,6 +355,18 @@ function AdminSettings() {
                       {catalogue.fileName ?? "No catalogue uploaded"}
                     </div>
                   </div>
+                  {catalogue.pdfUrl ? (
+                    <a
+                      href={catalogue.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm px-3 py-1.5 rounded-lg border border-border hover:bg-accent inline-flex items-center gap-1.5"
+                      title="Open uploaded PDF"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                      Open
+                    </a>
+                  ) : null}
                   <label className="text-sm px-3 py-1.5 rounded-lg border border-border hover:bg-accent inline-flex items-center gap-1.5 cursor-pointer">
                     <Upload className="h-3.5 w-3.5" aria-hidden="true" />
                     Upload
@@ -355,6 +388,7 @@ function AdminSettings() {
                               contentBase64,
                             },
                           });
+                          toast.success("Catalogue uploaded");
                         });
                         e.target.value = "";
                       }}

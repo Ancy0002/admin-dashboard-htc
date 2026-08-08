@@ -236,7 +236,7 @@ function AdminProducts() {
                             }
                             if (!product.hasSizes) {
                               toast.error(
-                                "Add at least one size/price in Edit — the live site needs it to show the product.",
+                                "Add at least one size/price in Edit - the live site needs it to show the product.",
                               );
                               return;
                             }

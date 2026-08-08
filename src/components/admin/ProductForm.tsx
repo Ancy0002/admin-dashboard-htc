@@ -324,11 +324,11 @@ export function ProductForm({ mode, initialData, categories }: ProductFormProps)
     }
 
     if (payload.sizes.length === 0) {
-      toast.error("Add at least one size with a price — required for hatikvahcare.com.");
+      toast.error("Add at least one size with a price - required for hatikvahcare.com.");
       return;
     }
 
-    // Keep quantity tiers priced — live site expects usable pricePerUnit values.
+    // Keep quantity tiers priced - live site expects usable pricePerUnit values.
     const basePrice = payload.sizes[0]?.price ?? 0;
     payload.quantityVariants = (
       payload.quantityVariants.length
@@ -371,7 +371,7 @@ export function ProductForm({ mode, initialData, categories }: ProductFormProps)
             );
           }
         } catch {
-          // Ignore network failures — save itself succeeded.
+          // Ignore network failures - save itself succeeded.
         }
       }
 
@@ -436,7 +436,7 @@ export function ProductForm({ mode, initialData, categories }: ProductFormProps)
                       {uploadingImage ? "Uploading..." : "Click to upload"}
                     </div>
                     <div className="text-center text-xs text-muted-foreground">
-                      Optional — without an upload, a default store image is used
+                      Optional - without an upload, a default store image is used
                       <br />
                       High resolution PNG or JPG (Recommended: 1000×1000px)
                     </div>
@@ -714,7 +714,7 @@ export function ProductForm({ mode, initialData, categories }: ProductFormProps)
 
         <CardSection
           title="Sizes & Pricing"
-          subtitle="Required — hatikvahcare.com will not show products without at least one size and price."
+          subtitle="Required - hatikvahcare.com will not show products without at least one size and price."
           action={
             <button
               type="button"

@@ -3,7 +3,7 @@ export const STORE_URL = (import.meta.env.VITE_STORE_URL ?? "https://hatikvahcar
   "",
 );
 
-/** Main app product detail page — matches hatikvahcare.com `/product/[id]`. */
+/** Main app product detail page - matches hatikvahcare.com `/product/[id]`. */
 export function storeProductUrl(productId: string) {
   return `${STORE_URL}/product/${productId}`;
 }

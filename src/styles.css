@@ -398,7 +398,7 @@
   filter: brightness(1.025);
 }
 
-/* Status — primary visual cue (gradient backgrounds). */
+/* Status - primary visual cue (gradient backgrounds). */
 .dhx_cal_event_line.dhx-evt.status-scheduled {
   background: linear-gradient(
     135deg,
@@ -435,7 +435,7 @@
   opacity: 0.85;
 }
 
-/* Type — secondary cue: left-edge accent stripe (4px). */
+/* Type - secondary cue: left-edge accent stripe (4px). */
 .dhx_cal_event_line.dhx-evt::before {
   content: "";
   position: absolute;

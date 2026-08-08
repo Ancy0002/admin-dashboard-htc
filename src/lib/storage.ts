@@ -25,7 +25,7 @@ function getBucketName() {
   return process.env.S3_BUCKET_NAME?.trim() || "hatikvahstorage";
 }
 
-/** Public base URL for object links — prefers S3_PUBLIC_URL, else S3_ENDPOINT. */
+/** Public base URL for object links - prefers S3_PUBLIC_URL, else S3_ENDPOINT. */
 function getPublicBaseUrl() {
   const publicUrl = process.env.S3_PUBLIC_URL?.trim();
   if (publicUrl) return publicUrl.replace(/\/$/, "");
@@ -48,7 +48,7 @@ export function toLiveProductImageUrl(url: string) {
   const trimmed = (url || "").trim();
   if (!trimmed) return trimmed;
 
-  // Already an absolute URL — keep as-is.
+  // Already an absolute URL - keep as-is.
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
 
   // Relative object key → public MinIO/S3 URL from .env.

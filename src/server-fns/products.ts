@@ -41,7 +41,7 @@ async function persistImageOrDefault(value: string) {
     const persisted = await persistProductImage(trimmed);
     return resolveProductImage(persisted) || "";
   } catch {
-    // S3 optional — return empty string if upload fails.
+    // S3 optional - return empty string if upload fails.
     return "";
   }
 }

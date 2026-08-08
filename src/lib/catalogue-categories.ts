@@ -1,10 +1,12 @@
+/** Category catalogue slots — matches hatikvahcare.com footer / Explore Our Catalog. */
 export const CATALOGUE_CATEGORIES = [
   "Bio Dry Amenities",
   "Bio Wet Amenities",
-  "Bulk & Brackets",
+  "Basic Dry & Wet Amenities",
   "Dry Amenities",
   "Wet Amenities",
   "Tray Amenities",
+  "Bulk & Brackets",
   "Housekeeping",
   "Coffee & Beverages",
   "Others",
